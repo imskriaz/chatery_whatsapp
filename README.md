@@ -1147,11 +1147,11 @@ If you find this project helpful, consider supporting the development:
 </p>
 
 <p align="center">
-  <a href="https://github.com/farinchan/chatery_backend">
-    <img src="https://img.shields.io/github/stars/farinchan/chatery_backend?style=social" alt="GitHub Stars" />
+  <a href="https://github.com/farinchan/chatery_whatsapp">
+    <img src="https://img.shields.io/github/stars/farinchan/chatery_whatsapp?style=social" alt="GitHub Stars" />
   </a>
-  <a href="https://github.com/farinchan/chatery_backend/fork">
-    <img src="https://img.shields.io/github/forks/farinchan/chatery_backend?style=social" alt="GitHub Forks" />
+  <a href="https://github.com/farinchan/chatery_whatsapp/fork">
+    <img src="https://img.shields.io/github/forks/farinchan/chatery_whatsapp?style=social" alt="GitHub Forks" />
   </a>
 </p>
 
