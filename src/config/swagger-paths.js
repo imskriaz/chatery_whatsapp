@@ -521,6 +521,305 @@
 
 /**
  * @swagger
+ * /api/whatsapp/chats/bulk-status/{jobId}:
+ *   get:
+ *     tags: [Bulk Messaging]
+ *     summary: Get bulk job status
+ *     description: Check the status and progress of a bulk messaging job
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The bulk job ID returned from send-bulk endpoints
+ *         example: bulk_1704326400000_abc123def
+ *     responses:
+ *       200:
+ *         description: Job status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     sessionId:
+ *                       type: string
+ *                     type:
+ *                       type: string
+ *                       enum: [text, image, document]
+ *                     status:
+ *                       type: string
+ *                       enum: [processing, completed]
+ *                     total:
+ *                       type: integer
+ *                     sent:
+ *                       type: integer
+ *                     failed:
+ *                       type: integer
+ *                     progress:
+ *                       type: integer
+ *                       description: Progress percentage (0-100)
+ *                     details:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           recipient:
+ *                             type: string
+ *                           status:
+ *                             type: string
+ *                           messageId:
+ *                             type: string
+ *                           error:
+ *                             type: string
+ *                           timestamp:
+ *                             type: string
+ *                     createdAt:
+ *                       type: string
+ *                     completedAt:
+ *                       type: string
+ *       404:
+ *         description: Job not found
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/bulk-jobs:
+ *   post:
+ *     tags: [Bulk Messaging]
+ *     summary: Get all bulk jobs for a session
+ *     description: Retrieve list of all bulk messaging jobs for a specific session (last 50)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *     responses:
+ *       200:
+ *         description: List of jobs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       jobId:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                       total:
+ *                         type: integer
+ *                       sent:
+ *                         type: integer
+ *                       failed:
+ *                         type: integer
+ *                       progress:
+ *                         type: integer
+ *                       createdAt:
+ *                         type: string
+ *                       completedAt:
+ *                         type: string
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/send-bulk:
+ *   post:
+ *     tags: [Bulk Messaging]
+ *     summary: Send bulk text message (Background)
+ *     description: |
+ *       Send the same text message to multiple recipients. **Runs in background** - returns immediately with a jobId to track progress.
+ *       
+ *       **Features:**
+ *       - Maximum 100 recipients per request
+ *       - Runs in background, returns immediately
+ *       - Track progress using GET /chats/bulk-status/{jobId}
+ *       - Automatic delay between messages to avoid rate limiting
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, recipients, message]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               recipients:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["628123456789", "628987654321", "628111222333"]
+ *                 description: Array of phone numbers (max 100)
+ *               message:
+ *                 type: string
+ *                 example: Hello! This is a bulk message.
+ *               delayBetweenMessages:
+ *                 type: integer
+ *                 example: 1000
+ *                 description: Delay between messages in milliseconds (default 1000ms)
+ *               typingTime:
+ *                 type: integer
+ *                 example: 0
+ *                 description: Typing indicator duration before each message (ms)
+ *     responses:
+ *       200:
+ *         description: Job started successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Bulk message job started. Check status with jobId.
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     jobId:
+ *                       type: string
+ *                       example: bulk_1704326400000_abc123def
+ *                     total:
+ *                       type: integer
+ *                       example: 3
+ *                     statusUrl:
+ *                       type: string
+ *                       example: /api/whatsapp/chats/bulk-status/bulk_1704326400000_abc123def
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/send-bulk-image:
+ *   post:
+ *     tags: [Bulk Messaging]
+ *     summary: Send bulk image message (Background)
+ *     description: |
+ *       Send the same image to multiple recipients. **Runs in background** - returns immediately with a jobId.
+ *       
+ *       Track progress using GET /chats/bulk-status/{jobId}
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, recipients, imageUrl]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               recipients:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["628123456789", "628987654321"]
+ *                 description: Array of phone numbers (max 100)
+ *               imageUrl:
+ *                 type: string
+ *                 example: https://example.com/image.jpg
+ *               caption:
+ *                 type: string
+ *                 example: Check out this image!
+ *               delayBetweenMessages:
+ *                 type: integer
+ *                 example: 1000
+ *               typingTime:
+ *                 type: integer
+ *                 example: 0
+ *     responses:
+ *       200:
+ *         description: Job started successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     jobId:
+ *                       type: string
+ *                     total:
+ *                       type: integer
+ *                     statusUrl:
+ *                       type: string
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/send-bulk-document:
+ *   post:
+ *     tags: [Bulk Messaging]
+ *     summary: Send bulk document (Background)
+ *     description: |
+ *       Send the same document to multiple recipients. **Runs in background** - returns immediately with a jobId.
+ *       
+ *       Track progress using GET /chats/bulk-status/{jobId}
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, recipients, documentUrl, filename]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               recipients:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["628123456789", "628987654321"]
+ *               documentUrl:
+ *                 type: string
+ *                 example: https://example.com/document.pdf
+ *               filename:
+ *                 type: string
+ *                 example: document.pdf
+ *               mimetype:
+ *                 type: string
+ *                 example: application/pdf
+ *               delayBetweenMessages:
+ *                 type: integer
+ *                 example: 1000
+ *               typingTime:
+ *                 type: integer
+ *                 example: 0
+ *     responses:
+ *       200:
+ *         description: Job started successfully
+ */
+
+/**
+ * @swagger
  * /api/whatsapp/chats/presence:
  *   post:
  *     tags: [Messaging]

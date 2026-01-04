@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -142,10 +143,21 @@
             font-weight: 700;
         }
 
-        .stat-value.success { color: var(--success); }
-        .stat-value.warning { color: var(--warning); }
-        .stat-value.info { color: var(--info); }
-        .stat-value.danger { color: var(--danger); }
+        .stat-value.success {
+            color: var(--success);
+        }
+
+        .stat-value.warning {
+            color: var(--warning);
+        }
+
+        .stat-value.info {
+            color: var(--info);
+        }
+
+        .stat-value.danger {
+            color: var(--danger);
+        }
 
         /* Main Grid */
         .main-grid {
@@ -472,10 +484,25 @@
             flex-shrink: 0;
         }
 
-        .event-type.message { background: rgba(46, 213, 115, 0.1); color: var(--success); }
-        .event-type.connection { background: rgba(52, 152, 219, 0.1); color: var(--info); }
-        .event-type.qr { background: rgba(255, 165, 2, 0.1); color: var(--warning); }
-        .event-type.error { background: rgba(255, 71, 87, 0.1); color: var(--danger); }
+        .event-type.message {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--success);
+        }
+
+        .event-type.connection {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--info);
+        }
+
+        .event-type.qr {
+            background: rgba(255, 165, 2, 0.1);
+            color: var(--warning);
+        }
+
+        .event-type.error {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--danger);
+        }
 
         .event-content {
             color: var(--text-muted);
@@ -538,15 +565,24 @@
             min-width: 300px;
         }
 
-        .toast.success { border-color: var(--success); }
-        .toast.error { border-color: var(--danger); }
-        .toast.info { border-color: var(--info); }
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+        }
+
+        .toast.info {
+            border-color: var(--info);
+        }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateX(100px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -594,7 +630,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* API Tester */
@@ -662,10 +700,25 @@
             margin-right: 8px;
         }
 
-        .method-badge.get { background: rgba(46, 213, 115, 0.2); color: var(--success); }
-        .method-badge.post { background: rgba(52, 152, 219, 0.2); color: var(--info); }
-        .method-badge.delete { background: rgba(255, 71, 87, 0.2); color: var(--danger); }
-        .method-badge.put { background: rgba(255, 165, 2, 0.2); color: var(--warning); }
+        .method-badge.get {
+            background: rgba(46, 213, 115, 0.2);
+            color: var(--success);
+        }
+
+        .method-badge.post {
+            background: rgba(52, 152, 219, 0.2);
+            color: var(--info);
+        }
+
+        .method-badge.delete {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--danger);
+        }
+
+        .method-badge.put {
+            background: rgba(255, 165, 2, 0.2);
+            color: var(--warning);
+        }
 
         /* API Help */
         .api-help {
@@ -747,6 +800,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -818,56 +872,104 @@
                             <label class="form-label">Endpoint</label>
                             <select class="endpoint-select" id="apiEndpoint" onchange="updateRequestBody()">
                                 <optgroup label="Sessions">
-                                    <option value="GET|/api/whatsapp/sessions">GET /sessions - List all sessions</option>
-                                    <option value="GET|/api/whatsapp/sessions/{sessionId}/status">GET /sessions/:sessionId/status - Get session status</option>
-                                    <option value="GET|/api/whatsapp/sessions/{sessionId}/qr">GET /sessions/:sessionId/qr - Get QR code</option>
-                                    <option value="POST|/api/whatsapp/sessions/{sessionId}/connect">POST /sessions/:sessionId/connect - Connect session</option>
-                                    <option value="PATCH|/api/whatsapp/sessions/{sessionId}/config">PATCH /sessions/:sessionId/config - Update config</option>
-                                    <option value="POST|/api/whatsapp/sessions/{sessionId}/webhooks">POST /sessions/:sessionId/webhooks - Add webhook</option>
-                                    <option value="DELETE|/api/whatsapp/sessions/{sessionId}/webhooks">DELETE /sessions/:sessionId/webhooks - Remove webhook</option>
-                                    <option value="DELETE|/api/whatsapp/sessions/{sessionId}">DELETE /sessions/:sessionId - Delete session</option>
+                                    <option value="GET|/api/whatsapp/sessions">GET /sessions - List all sessions
+                                    </option>
+                                    <option value="GET|/api/whatsapp/sessions/{sessionId}/status">GET
+                                        /sessions/:sessionId/status - Get session status</option>
+                                    <option value="GET|/api/whatsapp/sessions/{sessionId}/qr">GET
+                                        /sessions/:sessionId/qr - Get QR code</option>
+                                    <option value="POST|/api/whatsapp/sessions/{sessionId}/connect">POST
+                                        /sessions/:sessionId/connect - Connect session</option>
+                                    <option value="PATCH|/api/whatsapp/sessions/{sessionId}/config">PATCH
+                                        /sessions/:sessionId/config - Update config</option>
+                                    <option value="POST|/api/whatsapp/sessions/{sessionId}/webhooks">POST
+                                        /sessions/:sessionId/webhooks - Add webhook</option>
+                                    <option value="DELETE|/api/whatsapp/sessions/{sessionId}/webhooks">DELETE
+                                        /sessions/:sessionId/webhooks - Remove webhook</option>
+                                    <option value="DELETE|/api/whatsapp/sessions/{sessionId}">DELETE
+                                        /sessions/:sessionId - Delete session</option>
                                 </optgroup>
                                 <optgroup label="Messaging">
-                                    <option value="POST|/api/whatsapp/chats/send-text">POST /chats/send-text - Send text message</option>
-                                    <option value="POST|/api/whatsapp/chats/send-image">POST /chats/send-image - Send image</option>
-                                    <option value="POST|/api/whatsapp/chats/send-document">POST /chats/send-document - Send document</option>
-                                    <option value="POST|/api/whatsapp/chats/send-location">POST /chats/send-location - Send location</option>
-                                    <option value="POST|/api/whatsapp/chats/send-contact">POST /chats/send-contact - Send contact</option>
-                                    <option value="POST|/api/whatsapp/chats/send-button">POST /chats/send-button - Send button message</option>
-                                    <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Send typing indicator</option>
-                                    <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number - Check number exists</option>
-                                    <option value="POST|/api/whatsapp/chats/profile-picture">POST /chats/profile-picture - Get profile picture</option>
+                                    <option value="POST|/api/whatsapp/chats/send-text">POST /chats/send-text - Send text
+                                        message</option>
+                                    <option value="POST|/api/whatsapp/chats/send-image">POST /chats/send-image - Send
+                                        image</option>
+                                    <option value="POST|/api/whatsapp/chats/send-document">POST /chats/send-document -
+                                        Send document</option>
+                                    <option value="POST|/api/whatsapp/chats/send-location">POST /chats/send-location -
+                                        Send location</option>
+                                    <option value="POST|/api/whatsapp/chats/send-contact">POST /chats/send-contact -
+                                        Send contact</option>
+                                    <option value="POST|/api/whatsapp/chats/send-button">POST /chats/send-button - Send
+                                        button message</option>
+                                    <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Send typing
+                                        indicator</option>
+                                    <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number -
+                                        Check number exists</option>
+                                    <option value="POST|/api/whatsapp/chats/profile-picture">POST /chats/profile-picture
+                                        - Get profile picture</option>
+                                </optgroup>
+                                <optgroup label="Bulk Messaging">
+                                    <option value="POST|/api/whatsapp/chats/send-bulk">POST /chats/send-bulk - Send bulk
+                                        text (Background)</option>
+                                    <option value="POST|/api/whatsapp/chats/send-bulk-image">POST /chats/send-bulk-image
+                                        - Send bulk image (Background)</option>
+                                    <option value="POST|/api/whatsapp/chats/send-bulk-document">POST
+                                        /chats/send-bulk-document - Send bulk document (Background)</option>
+                                    <option value="GET|/api/whatsapp/chats/bulk-status/{jobId}">GET
+                                        /chats/bulk-status/:jobId - Get job status</option>
+                                    <option value="POST|/api/whatsapp/chats/bulk-jobs">POST /chats/bulk-jobs - Get all
+                                        bulk jobs</option>
                                 </optgroup>
                                 <optgroup label="Chat History">
-                                    <option value="POST|/api/whatsapp/chats/overview">POST /chats/overview - Get chats overview</option>
+                                    <option value="POST|/api/whatsapp/chats/overview">POST /chats/overview - Get chats
+                                        overview</option>
                                     <option value="POST|/api/whatsapp/contacts">POST /contacts - Get contacts</option>
-                                    <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Get chat messages</option>
-                                    <option value="POST|/api/whatsapp/chats/info">POST /chats/info - Get chat info</option>
-                                    <option value="POST|/api/whatsapp/chats/mark-read">POST /chats/mark-read - Mark chat as read</option>
+                                    <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Get chat
+                                        messages</option>
+                                    <option value="POST|/api/whatsapp/chats/info">POST /chats/info - Get chat info
+                                    </option>
+                                    <option value="POST|/api/whatsapp/chats/mark-read">POST /chats/mark-read - Mark chat
+                                        as read</option>
                                 </optgroup>
                                 <optgroup label="Groups - Basic">
                                     <option value="POST|/api/whatsapp/groups">POST /groups - Get all groups</option>
-                                    <option value="POST|/api/whatsapp/groups/create">POST /groups/create - Create new group</option>
-                                    <option value="POST|/api/whatsapp/groups/metadata">POST /groups/metadata - Get group metadata</option>
-                                    <option value="POST|/api/whatsapp/groups/leave">POST /groups/leave - Leave group</option>
-                                    <option value="POST|/api/whatsapp/groups/join">POST /groups/join - Join via invite code</option>
+                                    <option value="POST|/api/whatsapp/groups/create">POST /groups/create - Create new
+                                        group</option>
+                                    <option value="POST|/api/whatsapp/groups/metadata">POST /groups/metadata - Get group
+                                        metadata</option>
+                                    <option value="POST|/api/whatsapp/groups/leave">POST /groups/leave - Leave group
+                                    </option>
+                                    <option value="POST|/api/whatsapp/groups/join">POST /groups/join - Join via invite
+                                        code</option>
                                 </optgroup>
                                 <optgroup label="Groups - Participants">
-                                    <option value="POST|/api/whatsapp/groups/participants/add">POST /groups/participants/add - Add participants</option>
-                                    <option value="POST|/api/whatsapp/groups/participants/remove">POST /groups/participants/remove - Remove participants</option>
-                                    <option value="POST|/api/whatsapp/groups/participants/promote">POST /groups/participants/promote - Promote to admin</option>
-                                    <option value="POST|/api/whatsapp/groups/participants/demote">POST /groups/participants/demote - Demote from admin</option>
+                                    <option value="POST|/api/whatsapp/groups/participants/add">POST
+                                        /groups/participants/add - Add participants</option>
+                                    <option value="POST|/api/whatsapp/groups/participants/remove">POST
+                                        /groups/participants/remove - Remove participants</option>
+                                    <option value="POST|/api/whatsapp/groups/participants/promote">POST
+                                        /groups/participants/promote - Promote to admin</option>
+                                    <option value="POST|/api/whatsapp/groups/participants/demote">POST
+                                        /groups/participants/demote - Demote from admin</option>
                                 </optgroup>
                                 <optgroup label="Groups - Settings">
-                                    <option value="POST|/api/whatsapp/groups/subject">POST /groups/subject - Update group name</option>
-                                    <option value="POST|/api/whatsapp/groups/description">POST /groups/description - Update description</option>
-                                    <option value="POST|/api/whatsapp/groups/settings">POST /groups/settings - Update settings</option>
-                                    <option value="POST|/api/whatsapp/groups/picture">POST /groups/picture - Update picture</option>
-                                    <option value="POST|/api/whatsapp/groups/invite-code">POST /groups/invite-code - Get invite link</option>
-                                    <option value="POST|/api/whatsapp/groups/revoke-invite">POST /groups/revoke-invite - Revoke invite link</option>
+                                    <option value="POST|/api/whatsapp/groups/subject">POST /groups/subject - Update
+                                        group name</option>
+                                    <option value="POST|/api/whatsapp/groups/description">POST /groups/description -
+                                        Update description</option>
+                                    <option value="POST|/api/whatsapp/groups/settings">POST /groups/settings - Update
+                                        settings</option>
+                                    <option value="POST|/api/whatsapp/groups/picture">POST /groups/picture - Update
+                                        picture</option>
+                                    <option value="POST|/api/whatsapp/groups/invite-code">POST /groups/invite-code - Get
+                                        invite link</option>
+                                    <option value="POST|/api/whatsapp/groups/revoke-invite">POST /groups/revoke-invite -
+                                        Revoke invite link</option>
                                 </optgroup>
                                 <optgroup label="WebSocket">
-                                    <option value="GET|/api/websocket/stats">GET /websocket/stats - WebSocket stats</option>
+                                    <option value="GET|/api/websocket/stats">GET /websocket/stats - WebSocket stats
+                                    </option>
                                 </optgroup>
                                 <optgroup label="System">
                                     <option value="GET|/api/health">GET /health - Health check</option>
@@ -877,6 +979,11 @@
                         <div class="form-group" id="sessionIdGroup" style="display: none;">
                             <label class="form-label">Session ID (for URL)</label>
                             <input type="text" class="form-input" id="apiSessionId" placeholder="Enter session ID">
+                        </div>
+                        <div class="form-group" id="jobIdGroup" style="display: none;">
+                            <label class="form-label">Job ID (for URL)</label>
+                            <input type="text" class="form-input" id="apiJobId"
+                                placeholder="Enter job ID (e.g., bulk_123456789_abc123def)">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Request Body (JSON)</label>
@@ -931,7 +1038,8 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Message</label>
-                            <textarea class="form-input" id="quickMessage" rows="3" placeholder="Type your message..."></textarea>
+                            <textarea class="form-input" id="quickMessage" rows="3"
+                                placeholder="Type your message..."></textarea>
                         </div>
                         <button class="btn btn-primary" onclick="quickSend()" style="width: 100%;">
                             Send Message
@@ -952,16 +1060,17 @@
                 <a href="https://github.com/farinchan/chatery_whatsapp" target="_blank" class="btn btn-github">
                     ⭐ Star on GitHub
                 </a>
-                <a href="https://www.linkedin.com/in/fajri-chan" target="_blank" class="btn btn-outline">   
+                <a href="https://www.linkedin.com/in/fajri-chan" target="_blank" class="btn btn-outline">
                     💼 LinkedIn
                 </a>
             </div>
             <div class="footer-credit">
-                Made with ❤️ by <a href="https://github.com/farinchan" target="_blank">Farin Chan</a> | 
+                Made with ❤️ by <a href="https://github.com/farinchan" target="_blank">Farin Chan</a> |
                 <strong>Chatery API</strong> - WhatsApp Multi-Session Gateway
             </div>
             <div style="font-size: 12px; color: var(--text-muted);">
-                © 2024 Chatery. Open Source under MIT License.
+                © <span id="footerYear"></span> Chatery. Open Source under MIT License.
+
             </div>
         </div>
     </footer>
@@ -988,25 +1097,30 @@
         <div class="modal" style="max-width: 500px;">
             <div class="modal-title">➕ Create New Session</div>
             <div class="modal-subtitle">Enter session details and optional configuration</div>
-            
+
             <div class="form-group" style="text-align: left;">
                 <label class="form-label">Session ID *</label>
-                <input type="text" class="form-input" id="newSessionId" placeholder="e.g. my-session-1" pattern="[a-zA-Z0-9_-]+">
-                <small style="color: var(--text-muted); font-size: 12px;">Only letters, numbers, underscore, and dash allowed</small>
+                <input type="text" class="form-input" id="newSessionId" placeholder="e.g. my-session-1"
+                    pattern="[a-zA-Z0-9_-]+">
+                <small style="color: var(--text-muted); font-size: 12px;">Only letters, numbers, underscore, and dash
+                    allowed</small>
             </div>
-            
+
             <div class="form-group" style="text-align: left;">
                 <label class="form-label">Webhook URL (optional)</label>
-                <input type="url" class="form-input" id="newSessionWebhook" placeholder="https://your-server.com/webhook">
+                <input type="url" class="form-input" id="newSessionWebhook"
+                    placeholder="https://your-server.com/webhook">
                 <small style="color: var(--text-muted); font-size: 12px;">URL to receive WhatsApp events</small>
             </div>
-            
+
             <div class="form-group" style="text-align: left;">
                 <label class="form-label">Metadata (optional)</label>
-                <textarea class="form-input" id="newSessionMetadata" placeholder='{"appName": "MyApp", "userId": "123"}' style="min-height: 80px; font-family: monospace; font-size: 12px;"></textarea>
-                <small style="color: var(--text-muted); font-size: 12px;">Custom JSON data to associate with this session</small>
+                <textarea class="form-input" id="newSessionMetadata" placeholder='{"appName": "MyApp", "userId": "123"}'
+                    style="min-height: 80px; font-family: monospace; font-size: 12px;"></textarea>
+                <small style="color: var(--text-muted); font-size: 12px;">Custom JSON data to associate with this
+                    session</small>
             </div>
-            
+
             <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
                 <button class="btn btn-outline" onclick="closeCreateSessionModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="createSession()">Create & Connect</button>
@@ -1019,41 +1133,52 @@
         <div class="modal" style="max-width: 600px;">
             <div class="modal-title">🔗 Manage Webhooks</div>
             <div class="modal-subtitle" id="webhooksSessionName">Session: -</div>
-            
+
             <!-- Add Webhook Form -->
-            <div style="background: var(--card-bg); border-radius: 8px; padding: 16px; margin-bottom: 16px; text-align: left;">
+            <div
+                style="background: var(--card-bg); border-radius: 8px; padding: 16px; margin-bottom: 16px; text-align: left;">
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label class="form-label">Webhook URL</label>
-                    <input type="url" class="form-input" id="newWebhookUrl" placeholder="https://your-server.com/webhook">
+                    <input type="url" class="form-input" id="newWebhookUrl"
+                        placeholder="https://your-server.com/webhook">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label class="form-label">Events (optional - leave empty for all events)</label>
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="message"> message
                         </label>
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="message_ack"> message_ack
                         </label>
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="message_revoke"> message_revoke
                         </label>
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="presence"> presence
                         </label>
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="qr"> qr
                         </label>
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="ready"> ready
                         </label>
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="disconnected"> disconnected
                         </label>
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="group_update"> group_update
                         </label>
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                        <label
+                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
                             <input type="checkbox" class="webhook-event" value="group_participants"> group_participants
                         </label>
                     </div>
@@ -1068,7 +1193,7 @@
                     <div style="text-align: center; color: var(--text-muted); padding: 16px;">Loading...</div>
                 </div>
             </div>
-            
+
             <div style="margin-top: 16px;">
                 <button class="btn btn-outline" onclick="closeWebhooksModal()">Close</button>
             </div>
@@ -1079,6 +1204,8 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
+        document.getElementById('footerYear').textContent = new Date().getFullYear();
+
         const API_BASE = '/api/whatsapp';
         let socket = null;
         let sessions = [];
@@ -1126,34 +1253,34 @@
                 window.location.href = '/';
                 return false;
             }
-            
+
             const password = prompt('🔑 Password:');
             if (password === null) {
                 alert('❌ Login required to access dashboard');
                 window.location.href = '/';
                 return false;
             }
-            
+
             try {
                 const response = await fetch('/api/dashboard/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     sessionStorage.setItem('dashboard_auth', 'authenticated');
                     isAuthenticated = true;
-                    
+
                     // Ask for API key (optional)
                     const inputApiKey = prompt('🔑 API Key (optional - leave blank if not configured):');
                     if (inputApiKey && inputApiKey.trim()) {
                         apiKey = inputApiKey.trim();
                         sessionStorage.setItem('api_key', apiKey);
                     }
-                    
+
                     alert('✅ Login successful! Welcome to Chatery Dashboard.');
                     return true;
                 } else {
@@ -1183,12 +1310,12 @@
                 const loggedIn = await promptLogin();
                 if (!loggedIn) return;
             }
-            
+
             connectWebSocket();
             loadSessions();
             loadWsStats();
             updateRequestBody();
-            
+
             // Refresh stats every 30 seconds
             setInterval(() => {
                 loadSessions();
@@ -1203,7 +1330,7 @@
             socket.on('connect', () => {
                 updateWsStatus(true);
                 addEvent('connection', 'WebSocket connected');
-                
+
                 // Subscribe to all sessions
                 sessions.forEach(s => socket.emit('subscribe', s.sessionId));
             });
@@ -1261,13 +1388,13 @@
             try {
                 const response = await apiFetch(`${API_BASE}/sessions`);
                 const result = await response.json();
-                
+
                 if (result.success) {
                     sessions = result.data;
                     renderSessions();
                     updateStats();
                     updateQuickSendDropdown();
-                    
+
                     // Subscribe to all sessions
                     if (socket && socket.connected) {
                         sessions.forEach(s => socket.emit('subscribe', s.sessionId));
@@ -1280,7 +1407,7 @@
 
         function renderSessions() {
             const container = document.getElementById('sessionsList');
-            
+
             if (sessions.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -1331,7 +1458,7 @@
         function updateStats() {
             const connected = sessions.filter(s => s.status === 'connected').length;
             const disconnected = sessions.filter(s => s.status !== 'connected').length;
-            
+
             document.getElementById('statSessions').textContent = sessions.length;
             document.getElementById('statConnected').textContent = connected;
             document.getElementById('statDisconnected').textContent = disconnected;
@@ -1352,7 +1479,7 @@
         function updateQuickSendDropdown() {
             const select = document.getElementById('quickSession');
             const connectedSessions = sessions.filter(s => s.status === 'connected');
-            
+
             select.innerHTML = '<option value="">Select session...</option>' +
                 connectedSessions.map(s => `<option value="${s.sessionId}">${s.name || s.sessionId}</option>`).join('');
         }
@@ -1374,7 +1501,7 @@
             const sessionId = document.getElementById('newSessionId').value.trim();
             const webhookUrl = document.getElementById('newSessionWebhook').value.trim();
             const metadataText = document.getElementById('newSessionMetadata').value.trim();
-            
+
             if (!sessionId) {
                 showToast('error', 'Please enter a session ID');
                 return;
@@ -1387,7 +1514,7 @@
 
             // Build request body
             const body = {};
-            
+
             // Parse metadata if provided
             if (metadataText) {
                 try {
@@ -1397,7 +1524,7 @@
                     return;
                 }
             }
-            
+
             // Add webhook if provided
             if (webhookUrl) {
                 try {
@@ -1419,14 +1546,14 @@
                 if (result.success) {
                     closeCreateSessionModal();
                     showToast('success', 'Session created! Scan QR code to connect.');
-                    
+
                     // Subscribe to this session
                     if (socket && socket.connected) {
                         socket.emit('subscribe', sessionId);
                     }
-                    
+
                     loadSessions();
-                    
+
                     // Show QR modal after a short delay
                     setTimeout(() => showQrForSession(sessionId), 1000);
                 } else {
@@ -1541,25 +1668,33 @@
             const endpoint = document.getElementById('apiEndpoint').value;
             const [method, path] = endpoint.split('|');
             const sessionIdGroup = document.getElementById('sessionIdGroup');
+            const jobIdGroup = document.getElementById('jobIdGroup');
             const bodyTextarea = document.getElementById('apiBody');
             const apiHelp = document.getElementById('apiHelp');
-            
+
             // Show/hide session ID input for URL params
             if (path.includes('{sessionId}')) {
                 sessionIdGroup.style.display = 'block';
             } else {
                 sessionIdGroup.style.display = 'none';
             }
-            
+
+            // Show/hide job ID input for URL params
+            if (path.includes('{jobId}')) {
+                jobIdGroup.style.display = 'block';
+            } else {
+                jobIdGroup.style.display = 'none';
+            }
+
             let body = {};
             let showBody = true;
             let helpText = '';
-            
+
             // Sessions
             if (path.includes('/sessions') && method === 'GET') {
                 showBody = false;
             } else if (path.includes('/sessions') && path.includes('/webhooks') && method === 'POST') {
-                body = { 
+                body = {
                     url: 'https://your-server.com/webhook',
                     events: ['message', 'message_ack', 'presence']
                 };
@@ -1568,12 +1703,12 @@
                     <code>events</code>: (optional) Array of events to receive. Available events:<br>
                     <code>qr</code>, <code>ready</code>, <code>authenticated</code>, <code>disconnected</code>, <code>message</code>, <code>message_ack</code>, <code>message_revoke</code>, <code>presence</code>, <code>group_update</code>, <code>group_participants</code>`;
             } else if (path.includes('/sessions') && path.includes('/webhooks') && method === 'DELETE') {
-                body = { 
+                body = {
                     url: 'https://your-server.com/webhook'
                 };
                 helpText = '🗑️ Remove a webhook by its URL.';
             } else if (path.includes('/sessions') && path.includes('/config') && method === 'PATCH') {
-                body = { 
+                body = {
                     metadata: {
                         appName: 'My App',
                         userId: 'user123'
@@ -1594,36 +1729,36 @@
             }
             // Messaging
             else if (path.includes('/chats/send-text')) {
-                body = { 
-                    sessionId: '', 
-                    chatId: '628123456789', 
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
                     message: 'Hello from Chatery API!',
                     typingTime: 0
                 };
                 helpText = '📝 <code>chatId</code>: Phone number or group ID. <code>typingTime</code>: Typing duration in ms before sending (0 = no typing).';
             } else if (path.includes('/chats/send-image')) {
-                body = { 
-                    sessionId: '', 
-                    chatId: '628123456789', 
-                    imageUrl: 'https://example.com/image.jpg', 
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    imageUrl: 'https://example.com/image.jpg',
                     caption: 'Image caption',
                     typingTime: 0
                 };
                 helpText = '🖼️ <code>imageUrl</code>: Direct URL to image. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/send-document')) {
-                body = { 
-                    sessionId: '', 
-                    chatId: '628123456789', 
-                    documentUrl: 'https://example.com/document.pdf', 
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    documentUrl: 'https://example.com/document.pdf',
                     filename: 'document.pdf',
                     mimetype: 'application/pdf',
                     typingTime: 0
                 };
                 helpText = '📄 <code>mimetype</code>: MIME type. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/send-location')) {
-                body = { 
-                    sessionId: '', 
-                    chatId: '628123456789', 
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
                     latitude: -6.2088,
                     longitude: 106.8456,
                     name: 'Jakarta, Indonesia',
@@ -1631,18 +1766,18 @@
                 };
                 helpText = '📍 GPS coordinates. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/send-contact')) {
-                body = { 
-                    sessionId: '', 
-                    chatId: '628123456789', 
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
                     contactName: 'John Doe',
                     contactPhone: '628987654321',
                     typingTime: 0
                 };
                 helpText = '👤 <code>contactPhone</code>: Contact phone number. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/send-button')) {
-                body = { 
-                    sessionId: '', 
-                    chatId: '628123456789', 
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
                     text: 'Please choose an option:',
                     footer: 'Powered by Chatery',
                     buttons: ['Option 1', 'Option 2', 'Option 3'],
@@ -1650,59 +1785,114 @@
                 };
                 helpText = '🔘 <code>buttons</code>: Max 3 buttons. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/presence')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     chatId: '628123456789',
                     presence: 'composing'
                 };
                 helpText = '✍️ <code>presence</code>: <code>composing</code> (typing), <code>recording</code> (recording audio), <code>paused</code>, <code>available</code>, <code>unavailable</code>';
             } else if (path.includes('/chats/check-number')) {
-                body = { 
-                    sessionId: '', 
-                    phone: '628123456789' 
+                body = {
+                    sessionId: '',
+                    phone: '628123456789'
                 };
                 helpText = '✅ Check if a phone number is registered on WhatsApp.';
             } else if (path.includes('/chats/profile-picture')) {
-                body = { 
-                    sessionId: '', 
-                    phone: '628123456789' 
+                body = {
+                    sessionId: '',
+                    phone: '628123456789'
                 };
                 helpText = '🖼️ Get the profile picture URL of a WhatsApp user.';
             }
+            // Bulk Messaging
+            else if (path.includes('/chats/send-bulk') && !path.includes('image') && !path.includes('document')) {
+                body = {
+                    sessionId: '',
+                    recipients: ['628123456789', '628987654321', '628111222333'],
+                    message: 'Hello from Chatery Bulk API!',
+                    delay: 1000
+                };
+                helpText = `📤 Send bulk text messages (runs in background).<br>
+                    <code>recipients</code>: Array of phone numbers (max 100)<br>
+                    <code>message</code>: Text message to send<br>
+                    <code>delay</code>: Delay between messages in ms (default: 1000)<br>
+                    ⚡ Returns jobId immediately, use bulk-status to track progress.`;
+            } else if (path.includes('/chats/send-bulk-image')) {
+                body = {
+                    sessionId: '',
+                    recipients: ['628123456789', '628987654321', '628111222333'],
+                    imageUrl: 'https://example.com/image.jpg',
+                    caption: 'Bulk image caption',
+                    delay: 1500
+                };
+                helpText = `🖼️ Send bulk images (runs in background).<br>
+                    <code>recipients</code>: Array of phone numbers (max 100)<br>
+                    <code>imageUrl</code>: Direct URL to image<br>
+                    <code>caption</code>: Optional image caption<br>
+                    <code>delay</code>: Delay between messages in ms (default: 1000)<br>
+                    ⚡ Returns jobId immediately, use bulk-status to track progress.`;
+            } else if (path.includes('/chats/send-bulk-document')) {
+                body = {
+                    sessionId: '',
+                    recipients: ['628123456789', '628987654321', '628111222333'],
+                    documentUrl: 'https://example.com/document.pdf',
+                    filename: 'document.pdf',
+                    mimetype: 'application/pdf',
+                    delay: 1500
+                };
+                helpText = `📄 Send bulk documents (runs in background).<br>
+                    <code>recipients</code>: Array of phone numbers (max 100)<br>
+                    <code>documentUrl</code>: Direct URL to document<br>
+                    <code>filename</code>: Document filename<br>
+                    <code>mimetype</code>: MIME type (optional)<br>
+                    <code>delay</code>: Delay between messages in ms (default: 1000)<br>
+                    ⚡ Returns jobId immediately, use bulk-status to track progress.`;
+            } else if (path.includes('/chats/bulk-status')) {
+                showBody = false;
+                helpText = `📊 Get status of a bulk messaging job.<br>
+                    Replace <code>{jobId}</code> in the URL with your job ID.<br>
+                    Returns: status, progress, sent count, failed count, and results.`;
+            } else if (path.includes('/chats/bulk-jobs')) {
+                body = {
+                    sessionId: ''
+                };
+                helpText = `📋 Get all bulk messaging jobs for a session.<br>
+                    Returns: Array of all jobs with their status and progress.`;
+            }
             // Chat History
             else if (path.includes('/chats/overview')) {
-                body = { 
-                    sessionId: '', 
-                    limit: 50, 
-                    offset: 0, 
-                    type: 'all' 
+                body = {
+                    sessionId: '',
+                    limit: 50,
+                    offset: 0,
+                    type: 'all'
                 };
                 helpText = '💬 <code>type</code>: Filter by <code>all</code>, <code>personal</code>, or <code>group</code>';
             } else if (path.includes('/contacts')) {
-                body = { 
-                    sessionId: '', 
-                    limit: 100, 
-                    offset: 0, 
-                    search: '' 
+                body = {
+                    sessionId: '',
+                    limit: 100,
+                    offset: 0,
+                    search: ''
                 };
                 helpText = '👥 <code>search</code>: Filter contacts by name or number';
             } else if (path.includes('/chats/messages')) {
-                body = { 
-                    sessionId: '', 
-                    chatId: '628123456789@s.whatsapp.net', 
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789@s.whatsapp.net',
                     limit: 50,
                     cursor: null
                 };
                 helpText = '📜 <code>chatId</code>: Use @s.whatsapp.net for personal chats, @g.us for groups. <code>cursor</code>: Message ID for pagination.';
             } else if (path.includes('/chats/info')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     chatId: '628123456789@s.whatsapp.net'
                 };
                 helpText = 'ℹ️ Get detailed information about a chat or group.';
             } else if (path.includes('/chats/mark-read')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     chatId: '628123456789',
                     messageId: null
                 };
@@ -1710,61 +1900,61 @@
             }
             // Groups - Basic
             else if (path === 'POST|/api/whatsapp/groups' || path.endsWith('/groups')) {
-                body = { 
-                    sessionId: '' 
+                body = {
+                    sessionId: ''
                 };
                 helpText = '👥 Get all groups you are participating in.';
             } else if (path.includes('/groups/create')) {
-                body = { 
-                    sessionId: '', 
-                    name: 'My New Group', 
-                    participants: ['628123456789', '628987654321'] 
+                body = {
+                    sessionId: '',
+                    name: 'My New Group',
+                    participants: ['628123456789', '628987654321']
                 };
                 helpText = '➕ <code>participants</code>: Array of phone numbers to add to the new group.';
             } else if (path.includes('/groups/metadata')) {
-                body = { 
-                    sessionId: '', 
-                    groupId: '123456789@g.us' 
+                body = {
+                    sessionId: '',
+                    groupId: '123456789@g.us'
                 };
                 helpText = 'ℹ️ Get detailed group info including participants, admins, and settings.';
             } else if (path.includes('/groups/leave')) {
-                body = { 
-                    sessionId: '', 
-                    groupId: '123456789@g.us' 
+                body = {
+                    sessionId: '',
+                    groupId: '123456789@g.us'
                 };
                 helpText = '🚪 Leave a group. You will need to be re-added by an admin to rejoin.';
             } else if (path.includes('/groups/join')) {
-                body = { 
-                    sessionId: '', 
-                    inviteCode: 'https://chat.whatsapp.com/AbCdEfGhIjK' 
+                body = {
+                    sessionId: '',
+                    inviteCode: 'https://chat.whatsapp.com/AbCdEfGhIjK'
                 };
                 helpText = '🔗 <code>inviteCode</code>: Can be full URL or just the code part.';
             }
             // Groups - Participants
             else if (path.includes('/groups/participants/add')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us',
                     participants: ['628123456789', '628987654321']
                 };
                 helpText = '➕ Add new members to the group. You must be an admin.';
             } else if (path.includes('/groups/participants/remove')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us',
                     participants: ['628123456789']
                 };
                 helpText = '➖ Remove members from the group. You must be an admin.';
             } else if (path.includes('/groups/participants/promote')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us',
                     participants: ['628123456789']
                 };
                 helpText = '⬆️ Promote members to admin. You must be an admin.';
             } else if (path.includes('/groups/participants/demote')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us',
                     participants: ['628123456789']
                 };
@@ -1772,22 +1962,22 @@
             }
             // Groups - Settings
             else if (path.includes('/groups/subject')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us',
                     subject: 'New Group Name'
                 };
                 helpText = '✏️ Update the group name/subject. Max 25 characters.';
             } else if (path.includes('/groups/description')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us',
                     description: 'This is the group description'
                 };
                 helpText = '📝 Update group description. Can be empty to remove.';
             } else if (path.includes('/groups/settings')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us',
                     setting: 'announcement'
                 };
@@ -1797,21 +1987,21 @@
                     • <code>locked</code> - Only admins can edit group info<br>
                     • <code>unlocked</code> - All members can edit group info`;
             } else if (path.includes('/groups/picture')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us',
                     imageUrl: 'https://example.com/group-pic.jpg'
                 };
                 helpText = '🖼️ Update group profile picture. Image should be square.';
             } else if (path.includes('/groups/invite-code')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us'
                 };
                 helpText = '🔗 Get the current invite link for the group.';
             } else if (path.includes('/groups/revoke-invite')) {
-                body = { 
-                    sessionId: '', 
+                body = {
+                    sessionId: '',
                     groupId: '123456789@g.us'
                 };
                 helpText = '🔄 Revoke current invite link and generate a new one.';
@@ -1845,6 +2035,7 @@
             const responseBox = document.getElementById('apiResponse');
             const btn = document.getElementById('btnSendApi');
             const sessionIdInput = document.getElementById('apiSessionId');
+            const jobIdInput = document.getElementById('apiJobId');
 
             // Replace {sessionId} placeholder if needed
             if (path.includes('{sessionId}')) {
@@ -1854,6 +2045,16 @@
                     return;
                 }
                 path = path.replace('{sessionId}', sessionId);
+            }
+
+            // Replace {jobId} placeholder if needed
+            if (path.includes('{jobId}')) {
+                const jobId = jobIdInput.value.trim();
+                if (!jobId) {
+                    showToast('error', 'Please enter a Job ID');
+                    return;
+                }
+                path = path.replace('{jobId}', jobId);
             }
 
             btn.disabled = true;
@@ -1872,9 +2073,9 @@
 
                 const response = await fetch(path, options);
                 const result = await response.json();
-                
+
                 responseBox.textContent = JSON.stringify(result, null, 2);
-                
+
                 if (result.success) {
                     showToast('success', 'Request successful');
                 } else {
@@ -1893,7 +2094,7 @@
         function addEvent(type, content) {
             const log = document.getElementById('eventsLog');
             const time = new Date().toLocaleTimeString();
-            
+
             // Remove empty state if exists
             const emptyState = log.querySelector('.empty-state');
             if (emptyState) {
@@ -1930,7 +2131,7 @@
         function showToast(type, message) {
             const container = document.getElementById('toastContainer');
             const id = Date.now();
-            
+
             const icons = {
                 success: '✅',
                 error: '❌',
@@ -1972,11 +2173,11 @@
         async function loadWebhooks(sessionId) {
             const container = document.getElementById('webhooksList');
             container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;"><div class="spinner"></div></div>';
-            
+
             try {
                 const session = sessions.find(s => s.sessionId === sessionId);
                 const webhooks = session?.webhooks || [];
-                
+
                 if (webhooks.length === 0) {
                     container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;">No webhooks configured</div>';
                     return;
@@ -2003,7 +2204,7 @@
 
         async function addWebhook() {
             const url = document.getElementById('newWebhookUrl').value.trim();
-            
+
             if (!url) {
                 showToast('error', 'Please enter a webhook URL');
                 return;
@@ -2033,13 +2234,13 @@
                     showToast('success', 'Webhook added successfully');
                     document.getElementById('newWebhookUrl').value = '';
                     document.querySelectorAll('.webhook-event').forEach(cb => cb.checked = false);
-                    
+
                     // Update local session data
                     const session = sessions.find(s => s.sessionId === currentWebhookSessionId);
                     if (session) {
                         session.webhooks = result.data?.webhooks || [];
                     }
-                    
+
                     loadWebhooks(currentWebhookSessionId);
                     renderSessions();
                 } else {
@@ -2066,13 +2267,13 @@
 
                 if (result.success) {
                     showToast('success', 'Webhook removed successfully');
-                    
+
                     // Update local session data
                     const session = sessions.find(s => s.sessionId === currentWebhookSessionId);
                     if (session) {
                         session.webhooks = result.data?.webhooks || [];
                     }
-                    
+
                     loadWebhooks(currentWebhookSessionId);
                     renderSessions();
                 } else {
@@ -2103,4 +2304,5 @@
         });
     </script>
 </body>
+
 </html>

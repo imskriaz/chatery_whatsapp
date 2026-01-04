@@ -15,10 +15,12 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 - 🔌 **Real-time WebSocket** - Get instant notifications for messages, status updates, and more
 - 👥 **Group Management** - Create, manage, and control WhatsApp groups
 - 📨 **Send Messages** - Text, images, documents, locations, contacts, and buttons
+- � **Bulk Messaging** - Send messages to multiple recipients with background processing
 - 📥 **Auto-Save Media** - Automatically save incoming media to server
 - 💾 **Persistent Store** - Message history with optimized caching
 - 🔐 **Session Persistence** - Sessions survive server restarts
 - 🎛️ **Admin Dashboard** - Web-based dashboard with real-time monitoring and API tester
+- 📄 **Swagger UI** - Interactive API documentation at root URL
 
 ## 📖 Full Documentation
 
@@ -44,6 +46,7 @@ For complete and detailed documentation, please visit:
 - [API Documentation](#-api-documentation)
   - [Sessions](#sessions)
   - [Messaging](#messaging)
+  - [Bulk Messaging](#bulk-messaging-background-jobs)
   - [Chat History](#chat-history)
   - [Group Management](#group-management)
 - [WebSocket Events](#-websocket-events)
@@ -216,7 +219,9 @@ Dashboard requires login with username and password configured in `.env` file.
 | 📷 **QR Code Scanner** | Scan QR codes directly from the dashboard |
 | 📡 **Live Events** | Real-time WebSocket event viewer with filtering |
 | 💬 **Quick Send** | Send messages quickly to any number |
-| 🧪 **API Tester** | Test all 30+ API endpoints with pre-filled templates |
+| 🧪 **API Tester** | Test all 40+ API endpoints with pre-filled templates |
+| 📤 **Bulk Messaging** | Send messages to multiple recipients with job tracking |
+| 🔗 **Webhook Manager** | Add, remove, and configure webhooks per session |
 | 🚪 **Logout** | Secure logout button in header |
 
 ### 📸 Screenshots
@@ -574,6 +579,182 @@ POST /chats/profile-picture
 {
   "sessionId": "mysession",
   "phone": "628123456789"
+}
+```
+
+---
+
+### Bulk Messaging (Background Jobs)
+
+Bulk messaging runs in the background and returns immediately with a job ID. You can track progress using the status endpoint.
+
+> **⚡ Background Processing**: All bulk endpoints return immediately with a `jobId`. Messages are sent in background to avoid request timeouts. Track progress with the status endpoint.
+
+#### Send Bulk Text Message
+```http
+POST /chats/send-bulk
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "recipients": ["628123456789", "628987654321", "628111222333"],
+  "message": "Hello! This is a bulk message.",
+  "delayBetweenMessages": 1000,
+  "typingTime": 0
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `recipients` | array | Required. Array of phone numbers (max 100) |
+| `message` | string | Required. Text message to send |
+| `delayBetweenMessages` | number | Optional. Delay between messages in ms (default: 1000) |
+| `typingTime` | number | Optional. Typing indicator duration in ms (default: 0) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Bulk message job started. Check status with jobId.",
+  "data": {
+    "jobId": "bulk_1704326400000_abc123def",
+    "total": 3,
+    "statusUrl": "/api/whatsapp/chats/bulk-status/bulk_1704326400000_abc123def"
+  }
+}
+```
+
+#### Send Bulk Image
+```http
+POST /chats/send-bulk-image
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "recipients": ["628123456789", "628987654321"],
+  "imageUrl": "https://example.com/image.jpg",
+  "caption": "Check out this image!",
+  "delayBetweenMessages": 1000,
+  "typingTime": 0
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `recipients` | array | Required. Array of phone numbers (max 100) |
+| `imageUrl` | string | Required. Direct URL to image file |
+| `caption` | string | Optional. Image caption |
+| `delayBetweenMessages` | number | Optional. Delay between messages in ms (default: 1000) |
+| `typingTime` | number | Optional. Typing indicator duration in ms (default: 0) |
+
+#### Send Bulk Document
+```http
+POST /chats/send-bulk-document
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "recipients": ["628123456789", "628987654321"],
+  "documentUrl": "https://example.com/document.pdf",
+  "filename": "document.pdf",
+  "mimetype": "application/pdf",
+  "delayBetweenMessages": 1000,
+  "typingTime": 0
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `recipients` | array | Required. Array of phone numbers (max 100) |
+| `documentUrl` | string | Required. Direct URL to document |
+| `filename` | string | Required. Filename to display |
+| `mimetype` | string | Optional. MIME type (default: application/pdf) |
+| `delayBetweenMessages` | number | Optional. Delay between messages in ms (default: 1000) |
+| `typingTime` | number | Optional. Typing indicator duration in ms (default: 0) |
+
+#### Get Bulk Job Status
+```http
+GET /chats/bulk-status/:jobId
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "sessionId": "mysession",
+    "type": "text",
+    "status": "processing",
+    "total": 50,
+    "sent": 25,
+    "failed": 2,
+    "progress": 54,
+    "details": [
+      {
+        "recipient": "628123456789",
+        "status": "sent",
+        "messageId": "ABC123",
+        "timestamp": "2026-01-04T10:00:00.000Z"
+      },
+      {
+        "recipient": "628987654321",
+        "status": "failed",
+        "error": "Number not registered",
+        "timestamp": "2026-01-04T10:00:01.000Z"
+      }
+    ],
+    "createdAt": "2026-01-04T10:00:00.000Z",
+    "completedAt": null
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `processing` or `completed` |
+| `progress` | number | Progress percentage (0-100) |
+| `sent` | number | Successfully sent count |
+| `failed` | number | Failed count |
+| `details` | array | Per-recipient status with timestamps |
+
+#### Get All Bulk Jobs
+```http
+POST /chats/bulk-jobs
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "jobId": "bulk_1704326400000_abc123def",
+      "type": "text",
+      "status": "completed",
+      "total": 50,
+      "sent": 48,
+      "failed": 2,
+      "progress": 100,
+      "createdAt": "2026-01-04T10:00:00.000Z",
+      "completedAt": "2026-01-04T10:02:30.000Z"
+    }
+  ]
 }
 ```
 
@@ -1283,11 +1464,13 @@ Your support helps me maintain and improve this project! ❤️
 
 | Resource | URL |
 |----------|-----|
+| 📄 Swagger UI (API Docs) | http://localhost:3000 |
 | 🎛️ Dashboard | http://localhost:3000/dashboard |
 | 📚 API Base URL | http://localhost:3000/api/whatsapp |
 | 🔌 WebSocket Test | http://localhost:3000/ws-test |
 | 📊 WebSocket Stats | http://localhost:3000/api/websocket/stats |
 | ❤️ Health Check | http://localhost:3000/api/health |
+| 📋 OpenAPI JSON | http://localhost:3000/api-docs.json |
 
 ---
 
