@@ -520,7 +520,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendTextMessage(chatId, message, typingTime = 0) {
+    async sendTextMessage(chatId, message, typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -531,7 +531,19 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const result = await this.socket.sendMessage(jid, { text: message });
+            const messageOptions = { text: message };
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                messageOptions.quoted = {
+                    key: {
+                        remoteJid: jid,
+                        id: replyTo
+                    }
+                };
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageOptions);
             
             return { 
                 success: true, 
@@ -547,7 +559,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendImage(chatId, imageUrl, caption = '', typingTime = 0) {
+    async sendImage(chatId, imageUrl, caption = '', typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -558,10 +570,22 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const result = await this.socket.sendMessage(jid, {
+            const messageOptions = {
                 image: { url: imageUrl },
                 caption: caption
-            });
+            };
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                messageOptions.quoted = {
+                    key: {
+                        remoteJid: jid,
+                        id: replyTo
+                    }
+                };
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageOptions);
 
             return {
                 success: true,
@@ -577,7 +601,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf', typingTime = 0) {
+    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf', typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -588,11 +612,23 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const result = await this.socket.sendMessage(jid, {
+            const messageOptions = {
                 document: { url: documentUrl },
                 fileName: filename,
                 mimetype: mimetype
-            });
+            };
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                messageOptions.quoted = {
+                    key: {
+                        remoteJid: jid,
+                        id: replyTo
+                    }
+                };
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageOptions);
 
             return {
                 success: true,
@@ -608,7 +644,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendLocation(chatId, latitude, longitude, name = '', typingTime = 0) {
+    async sendLocation(chatId, latitude, longitude, name = '', typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -619,13 +655,25 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const result = await this.socket.sendMessage(jid, {
+            const messageOptions = {
                 location: {
                     degreesLatitude: latitude,
                     degreesLongitude: longitude,
                     name: name
                 }
-            });
+            };
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                messageOptions.quoted = {
+                    key: {
+                        remoteJid: jid,
+                        id: replyTo
+                    }
+                };
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageOptions);
 
             return {
                 success: true,
@@ -641,7 +689,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendContact(chatId, contactName, contactPhone, typingTime = 0) {
+    async sendContact(chatId, contactName, contactPhone, typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -654,12 +702,24 @@ class WhatsAppSession {
             
             const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${contactName}\nTEL;type=CELL;type=VOICE;waid=${contactPhone}:+${contactPhone}\nEND:VCARD`;
             
-            const result = await this.socket.sendMessage(jid, {
+            const messageOptions = {
                 contacts: {
                     displayName: contactName,
                     contacts: [{ vcard }]
                 }
-            });
+            };
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                messageOptions.quoted = {
+                    key: {
+                        remoteJid: jid,
+                        id: replyTo
+                    }
+                };
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageOptions);
 
             return {
                 success: true,
@@ -675,7 +735,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendButton(chatId, text, footer, buttons, typingTime = 0) {
+    async sendButton(chatId, text, footer, buttons, typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -686,7 +746,7 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const result = await this.socket.sendMessage(jid, {
+            const messageOptions = {
                 text: text,
                 footer: footer,
                 buttons: buttons.map((btn, idx) => ({
@@ -695,7 +755,19 @@ class WhatsAppSession {
                     type: 1
                 })),
                 headerType: 1
-            });
+            };
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                messageOptions.quoted = {
+                    key: {
+                        remoteJid: jid,
+                        id: replyTo
+                    }
+                };
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageOptions);
 
             return {
                 success: true,

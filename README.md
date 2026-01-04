@@ -1,4 +1,4 @@
-# 🚀 Chatery WhatsApp API
+﻿# 🚀 Chatery WhatsApp API
 
 ![Chatery](https://sgp.cloud.appwrite.io/v1/storage/buckets/6941a5b70012d918c7aa/files/6941a69000028dec52d2/view?project=694019b0000abc694483&token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbklkIjoiNjk0MWE4NjRjZGNhZGUxOTZmNTMiLCJyZXNvdXJjZUlkIjoiNjk0MWE1YjcwMDEyZDkxOGM3YWE6Njk0MWE2OTAwMDAyOGRlYzUyZDIiLCJyZXNvdXJjZVR5cGUiOiJmaWxlcyIsInJlc291cmNlSW50ZXJuYWxJZCI6IjE0NTE6MSIsImlhdCI6MTc2NTkxMDYyOH0.6DyBMKwzA6x__pQZn3vICDLdBfo0mEUlyMVAc3qEnyo)
 A powerful WhatsApp API backend built with Express.js and Baileys library. Supports multi-session management, real-time WebSocket events, group management, and media handling.
@@ -15,7 +15,8 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 - 🔌 **Real-time WebSocket** - Get instant notifications for messages, status updates, and more
 - 👥 **Group Management** - Create, manage, and control WhatsApp groups
 - 📨 **Send Messages** - Text, images, documents, locations, contacts, and buttons
-- � **Bulk Messaging** - Send messages to multiple recipients with background processing
+- ↩️ **Reply to Messages** - Reply/quote specific messages with replyTo parameter
+- 📤 **Bulk Messaging** - Send messages to multiple recipients with background processing
 - 📥 **Auto-Save Media** - Automatically save incoming media to server
 - 💾 **Persistent Store** - Message history with optimized caching
 - 🔐 **Session Persistence** - Sessions survive server restarts
@@ -387,6 +388,8 @@ DELETE /sessions/:sessionId
 ### Messaging
 
 > **💡 Typing Indicator**: All messaging endpoints support `typingTime` parameter (in milliseconds) to simulate typing before sending the message. This makes the bot appear more human-like.
+>
+> **↩️ Reply to Message**: All messaging endpoints support `replyTo` parameter to reply to a specific message. Pass the message ID to quote/reply to that message.
 
 #### Send Text Message
 ```http
@@ -399,7 +402,8 @@ POST /chats/send-text
   "sessionId": "mysession",
   "chatId": "628123456789",
   "message": "Hello, World!",
-  "typingTime": 2000
+  "typingTime": 2000,
+  "replyTo": "3EB0B430A2B52B67D0"
 }
 ```
 
@@ -409,6 +413,7 @@ POST /chats/send-text
 | `chatId` | string | Required. Phone number (628xxx) or group ID (xxx@g.us) |
 | `message` | string | Required. Text message to send |
 | `typingTime` | number | Optional. Typing duration in ms before sending (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
 
 #### Send Image
 ```http
@@ -422,7 +427,8 @@ POST /chats/send-image
   "chatId": "628123456789",
   "imageUrl": "https://example.com/image.jpg",
   "caption": "Check this out!",
-  "typingTime": 1500
+  "typingTime": 1500,
+  "replyTo": null
 }
 ```
 
@@ -433,6 +439,7 @@ POST /chats/send-image
 | `imageUrl` | string | Required. Direct URL to image file |
 | `caption` | string | Optional. Image caption |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
 
 #### Send Document
 ```http
@@ -447,7 +454,8 @@ POST /chats/send-document
   "documentUrl": "https://example.com/document.pdf",
   "filename": "document.pdf",
   "mimetype": "application/pdf",
-  "typingTime": 1000
+  "typingTime": 1000,
+  "replyTo": null
 }
 ```
 
@@ -459,6 +467,7 @@ POST /chats/send-document
 | `filename` | string | Required. Filename to display |
 | `mimetype` | string | Optional. MIME type (default: application/pdf) |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
 
 #### Send Location
 ```http
@@ -473,7 +482,8 @@ POST /chats/send-location
   "latitude": -6.2088,
   "longitude": 106.8456,
   "name": "Jakarta, Indonesia",
-  "typingTime": 1000
+  "typingTime": 1000,
+  "replyTo": null
 }
 ```
 
@@ -485,6 +495,7 @@ POST /chats/send-location
 | `longitude` | number | Required. GPS longitude |
 | `name` | string | Optional. Location name |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
 
 #### Send Contact
 ```http
@@ -498,7 +509,8 @@ POST /chats/send-contact
   "chatId": "628123456789",
   "contactName": "John Doe",
   "contactPhone": "628987654321",
-  "typingTime": 500
+  "typingTime": 500,
+  "replyTo": null
 }
 ```
 
@@ -509,6 +521,7 @@ POST /chats/send-contact
 | `contactName` | string | Required. Contact display name |
 | `contactPhone` | string | Required. Contact phone number |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
 
 #### Send Button Message
 ```http
@@ -523,7 +536,8 @@ POST /chats/send-button
   "text": "Please choose an option:",
   "footer": "Powered by Chatery",
   "buttons": ["Option 1", "Option 2", "Option 3"],
-  "typingTime": 2000
+  "typingTime": 2000,
+  "replyTo": null
 }
 ```
 
@@ -535,6 +549,7 @@ POST /chats/send-button
 | `footer` | string | Optional. Footer text |
 | `buttons` | array | Required. Array of button labels (max 3) |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
 
 #### Send Presence Update
 ```http

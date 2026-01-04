@@ -1733,18 +1733,20 @@
                     sessionId: '',
                     chatId: '628123456789',
                     message: 'Hello from Chatery API!',
-                    typingTime: 0
+                    typingTime: 0,
+                    replyTo: null
                 };
-                helpText = '📝 <code>chatId</code>: Phone number or group ID. <code>typingTime</code>: Typing duration in ms before sending (0 = no typing).';
+                helpText = '📝 <code>chatId</code>: Phone number or group ID. <code>typingTime</code>: Typing duration in ms. <code>replyTo</code>: Message ID to reply to (optional, set null to disable).';
             } else if (path.includes('/chats/send-image')) {
                 body = {
                     sessionId: '',
                     chatId: '628123456789',
                     imageUrl: 'https://example.com/image.jpg',
                     caption: 'Image caption',
-                    typingTime: 0
+                    typingTime: 0,
+                    replyTo: null
                 };
-                helpText = '🖼️ <code>imageUrl</code>: Direct URL to image. <code>typingTime</code>: Typing duration in ms.';
+                helpText = '🖼️ <code>imageUrl</code>: Direct URL to image. <code>typingTime</code>: Typing duration in ms. <code>replyTo</code>: Message ID to reply to (optional).';
             } else if (path.includes('/chats/send-document')) {
                 body = {
                     sessionId: '',
@@ -1752,9 +1754,10 @@
                     documentUrl: 'https://example.com/document.pdf',
                     filename: 'document.pdf',
                     mimetype: 'application/pdf',
-                    typingTime: 0
+                    typingTime: 0,
+                    replyTo: null
                 };
-                helpText = '📄 <code>mimetype</code>: MIME type. <code>typingTime</code>: Typing duration in ms.';
+                helpText = '📄 <code>mimetype</code>: MIME type. <code>typingTime</code>: Typing duration in ms. <code>replyTo</code>: Message ID to reply to (optional).';
             } else if (path.includes('/chats/send-location')) {
                 body = {
                     sessionId: '',
@@ -1762,18 +1765,20 @@
                     latitude: -6.2088,
                     longitude: 106.8456,
                     name: 'Jakarta, Indonesia',
-                    typingTime: 0
+                    typingTime: 0,
+                    replyTo: null
                 };
-                helpText = '📍 GPS coordinates. <code>typingTime</code>: Typing duration in ms.';
+                helpText = '📍 GPS coordinates. <code>replyTo</code>: Message ID to reply to (optional).';
             } else if (path.includes('/chats/send-contact')) {
                 body = {
                     sessionId: '',
                     chatId: '628123456789',
                     contactName: 'John Doe',
                     contactPhone: '628987654321',
-                    typingTime: 0
+                    typingTime: 0,
+                    replyTo: null
                 };
-                helpText = '👤 <code>contactPhone</code>: Contact phone number. <code>typingTime</code>: Typing duration in ms.';
+                helpText = '👤 <code>contactPhone</code>: Contact phone number. <code>replyTo</code>: Message ID to reply to (optional).';
             } else if (path.includes('/chats/send-button')) {
                 body = {
                     sessionId: '',
@@ -1781,9 +1786,10 @@
                     text: 'Please choose an option:',
                     footer: 'Powered by Chatery',
                     buttons: ['Option 1', 'Option 2', 'Option 3'],
-                    typingTime: 0
+                    typingTime: 0,
+                    replyTo: null
                 };
-                helpText = '🔘 <code>buttons</code>: Max 3 buttons. <code>typingTime</code>: Typing duration in ms.';
+                helpText = '🔘 <code>buttons</code>: Max 3 buttons. <code>replyTo</code>: Message ID to reply to (optional).';
             } else if (path.includes('/chats/presence')) {
                 body = {
                     sessionId: '',

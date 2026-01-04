@@ -318,7 +318,7 @@
  *   post:
  *     tags: [Messaging]
  *     summary: Send text message
- *     description: Send a text message to a chat
+ *     description: Send a text message to a chat. Optionally reply to a specific message.
  *     requestBody:
  *       required: true
  *       content:
@@ -341,6 +341,10 @@
  *                 type: integer
  *                 example: 2000
  *                 description: Typing indicator duration (ms)
+ *               replyTo:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *                 description: Message ID to reply to (optional)
  *     responses:
  *       200:
  *         description: Message sent
@@ -352,7 +356,7 @@
  *   post:
  *     tags: [Messaging]
  *     summary: Send image message
- *     description: Send an image with optional caption
+ *     description: Send an image with optional caption. Optionally reply to a specific message.
  *     requestBody:
  *       required: true
  *       content:
@@ -372,6 +376,10 @@
  *                 type: string
  *               typingTime:
  *                 type: integer
+ *               replyTo:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *                 description: Message ID to reply to (optional)
  *     responses:
  *       200:
  *         description: Image sent
@@ -383,7 +391,7 @@
  *   post:
  *     tags: [Messaging]
  *     summary: Send document
- *     description: Send a document/file
+ *     description: Send a document/file. Optionally reply to a specific message.
  *     requestBody:
  *       required: true
  *       content:
@@ -407,6 +415,10 @@
  *                 example: application/pdf
  *               typingTime:
  *                 type: integer
+ *               replyTo:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *                 description: Message ID to reply to (optional)
  *     responses:
  *       200:
  *         description: Document sent
@@ -418,7 +430,7 @@
  *   post:
  *     tags: [Messaging]
  *     summary: Send location
- *     description: Send a location message
+ *     description: Send a location message. Optionally reply to a specific message.
  *     requestBody:
  *       required: true
  *       content:
@@ -442,6 +454,10 @@
  *                 example: Jakarta
  *               typingTime:
  *                 type: integer
+ *               replyTo:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *                 description: Message ID to reply to (optional)
  *     responses:
  *       200:
  *         description: Location sent
@@ -453,7 +469,7 @@
  *   post:
  *     tags: [Messaging]
  *     summary: Send contact
- *     description: Send a contact card
+ *     description: Send a contact card. Optionally reply to a specific message.
  *     requestBody:
  *       required: true
  *       content:
@@ -474,6 +490,10 @@
  *                 example: "628987654321"
  *               typingTime:
  *                 type: integer
+ *               replyTo:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *                 description: Message ID to reply to (optional)
  *     responses:
  *       200:
  *         description: Contact sent
@@ -485,7 +505,7 @@
  *   post:
  *     tags: [Messaging]
  *     summary: Send button message
- *     description: Send a message with interactive buttons
+ *     description: Send a message with interactive buttons. Optionally reply to a specific message.
  *     requestBody:
  *       required: true
  *       content:
@@ -514,6 +534,10 @@
  *                       type: string
  *               typingTime:
  *                 type: integer
+ *               replyTo:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *                 description: Message ID to reply to (optional)
  *     responses:
  *       200:
  *         description: Button message sent
