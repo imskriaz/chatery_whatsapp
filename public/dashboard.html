@@ -2120,7 +2120,17 @@
                     headers: getApiHeaders(true)
                 };
 
-                if (method !== 'GET' && method !== 'DELETE' && bodyText) {
+                // Special handling for DELETE webhooks - use query parameter
+                if (method === 'DELETE' && path.includes('/webhooks') && bodyText) {
+                    try {
+                        const bodyObj = JSON.parse(bodyText);
+                        if (bodyObj.url) {
+                            path = `${path}?url=${encodeURIComponent(bodyObj.url)}`;
+                        }
+                    } catch (e) {
+                        // Ignore JSON parse error
+                    }
+                } else if (method !== 'GET' && method !== 'DELETE' && bodyText) {
                     options.body = bodyText;
                 }
 
@@ -2244,7 +2254,7 @@
                                 ${wh.events && wh.events.length > 0 ? `Events: ${wh.events.join(', ')}` : 'All events'}
                             </div>
                         </div>
-                        <button class="btn btn-danger btn-icon" onclick="removeWebhook('${wh.url.replace(/'/g, "\\'")}')" title="Remove" style="margin-left: 8px;">
+                        <button class="btn btn-danger btn-icon" data-webhook-url="${encodeURIComponent(wh.url)}" onclick="removeWebhook(decodeURIComponent(this.dataset.webhookUrl))" title="Remove" style="margin-left: 8px;">
                             🗑️
                         </button>
                     </div>
@@ -2306,14 +2316,26 @@
         }
 
         async function removeWebhook(url) {
+            console.log('removeWebhook called with:', url);
+            
+            if (!url) {
+                showToast('error', 'Webhook URL is missing');
+                console.error('removeWebhook: url is undefined or empty');
+                return;
+            }
+            
             if (!confirm(`Remove webhook?\n${url}`)) {
                 return;
             }
 
             try {
-                const response = await apiFetch(`${API_BASE}/sessions/${currentWebhookSessionId}/webhooks`, {
-                    method: 'DELETE',
-                    body: JSON.stringify({ url })
+                // Use query parameter for DELETE (more reliable than body)
+                const encodedUrl = encodeURIComponent(url);
+                const fullUrl = `${API_BASE}/sessions/${currentWebhookSessionId}/webhooks?url=${encodedUrl}`;
+                console.log('DELETE request to:', fullUrl);
+                
+                const response = await apiFetch(fullUrl, {
+                    method: 'DELETE'
                 });
 
                 const result = await response.json();

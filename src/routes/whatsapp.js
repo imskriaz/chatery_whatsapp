@@ -167,12 +167,12 @@ router.post('/sessions/:sessionId/webhooks', (req, res) => {
 router.delete('/sessions/:sessionId/webhooks', (req, res) => {
     try {
         const { sessionId } = req.params;
-        const { url } = req.body;
+        const url = req.body?.url || req.query?.url;
         
         if (!url) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required field: url'
+                message: 'Missing required field: url (provide in body or query parameter)'
             });
         }
         
