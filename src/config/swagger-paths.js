@@ -430,6 +430,55 @@
 
 /**
  * @swagger
+ * /api/whatsapp/chats/send-audio:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Send audio message (OGG only)
+ *     description: |
+ *       Send an audio file or voice note. Set ptt=true for voice note mode.
+ *       
+ *       **Important:** Audio must be in OGG format (.ogg). WhatsApp only supports OGG audio files with Opus codec.
+ *       
+ *       You can convert audio to OGG using FFmpeg:
+ *       ```
+ *       ffmpeg -i input.mp3 -c:a libopus output.ogg
+ *       ```
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, chatId, audioUrl]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               audioUrl:
+ *                 type: string
+ *                 example: https://example.com/audio.ogg
+ *                 description: URL to OGG audio file (required format)
+ *               ptt:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Push to talk mode (true = voice note, false = audio file)
+ *               typingTime:
+ *                 type: integer
+ *                 description: Recording simulation time in ms
+ *               replyTo:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *                 description: Message ID to reply to (optional)
+ *     responses:
+ *       200:
+ *         description: Audio sent
+ *       400:
+ *         description: Invalid format - must be OGG
+ */
+
+/**
+ * @swagger
  * /api/whatsapp/chats/send-location:
  *   post:
  *     tags: [Messaging]

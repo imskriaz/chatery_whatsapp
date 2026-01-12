@@ -398,6 +398,37 @@ router.post('/chats/send-document', checkSession, async (req, res) => {
     }
 });
 
+// Send audio message (OGG format required)
+router.post('/chats/send-audio', checkSession, async (req, res) => {
+    try {
+        const { chatId, audioUrl, ptt = false, typingTime = 0, replyTo = null } = req.body;
+        
+        if (!chatId || !audioUrl) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: chatId, audioUrl'
+            });
+        }
+
+        // Validate OGG format
+        const urlLower = audioUrl.toLowerCase();
+        if (!urlLower.endsWith('.ogg') && !urlLower.includes('.ogg?')) {
+            return res.status(400).json({
+                success: false,
+                message: 'Audio must be in OGG format (.ogg). WhatsApp only supports OGG audio files.'
+            });
+        }
+
+        const result = await req.session.sendAudio(chatId, audioUrl, ptt, typingTime, replyTo);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 // Send location
 router.post('/chats/send-location', checkSession, async (req, res) => {
     try {

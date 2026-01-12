@@ -671,6 +671,78 @@ class WhatsAppSession {
         }
     }
 
+    /**
+     * Send Audio Message
+     * @param {string} chatId - Chat ID or phone number
+     * @param {string} audioUrl - URL to audio file (must be OGG format)
+     * @param {boolean} ptt - Push to talk (voice note) mode
+     * @param {number} typingTime - Typing simulation time in ms
+     * @param {string} replyTo - Message ID to reply to
+     */
+    async sendAudio(chatId, audioUrl, ptt = false, typingTime = 0, replyTo = null) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            // Validate OGG format
+            const urlLower = audioUrl.toLowerCase();
+            if (!urlLower.endsWith('.ogg') && !urlLower.includes('.ogg?')) {
+                return { 
+                    success: false, 
+                    message: 'Audio must be in OGG format (.ogg). WhatsApp only supports OGG audio files.' 
+                };
+            }
+
+            const jid = this.formatChatId(chatId);
+            
+            // Simulate recording if typingTime > 0
+            if (typingTime > 0) {
+                await this.socket.sendPresenceUpdate('recording', jid);
+                await new Promise(resolve => setTimeout(resolve, typingTime));
+                await this.socket.sendPresenceUpdate('paused', jid);
+            }
+            
+            const messageContent = {
+                audio: { url: audioUrl },
+                ptt: ptt, // true = voice note, false = audio file
+                mimetype: 'audio/ogg; codecs=opus'
+            };
+            const messageOptions = {};
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
+
+            return {
+                success: true,
+                message: ptt ? 'Voice note sent successfully' : 'Audio sent successfully',
+                data: {
+                    messageId: result.key.id,
+                    chatId: jid,
+                    timestamp: new Date().toISOString()
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
     async sendLocation(chatId, latitude, longitude, name = '', typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {

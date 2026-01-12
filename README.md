@@ -472,6 +472,36 @@ POST /chats/send-document
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 | `replyTo` | string | Optional. Message ID to reply to |
 
+#### Send Audio
+```http
+POST /chats/send-audio
+```
+
+> ⚠️ **Important:** Audio must be in **OGG format** (.ogg). WhatsApp only supports OGG audio files with Opus codec.
+> 
+> Convert audio using FFmpeg: `ffmpeg -i input.mp3 -c:a libopus output.ogg`
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "audioUrl": "https://example.com/audio.ogg",
+  "ptt": true,
+  "typingTime": 1000,
+  "replyTo": null
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `audioUrl` | string | Required. Direct URL to OGG audio file (.ogg format only) |
+| `ptt` | boolean | Optional. Push to talk mode - true = voice note, false = audio file (default: false) |
+| `typingTime` | number | Optional. Recording simulation in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
+
 #### Send Location
 ```http
 POST /chats/send-location
