@@ -877,7 +877,9 @@
                                     <option value="GET|/api/whatsapp/sessions/{sessionId}/status">GET
                                         /sessions/:sessionId/status - Get session status</option>
                                     <option value="GET|/api/whatsapp/sessions/{sessionId}/qr">GET
-                                        /sessions/:sessionId/qr - Get QR code</option>
+                                        /sessions/:sessionId/qr - Get QR code (JSON)</option>
+                                    <option value="GET|/api/whatsapp/sessions/{sessionId}/qr/image">GET
+                                        /sessions/:sessionId/qr/image - Get QR code (PNG Image)</option>
                                     <option value="POST|/api/whatsapp/sessions/{sessionId}/connect">POST
                                         /sessions/:sessionId/connect - Connect session</option>
                                     <option value="PATCH|/api/whatsapp/sessions/{sessionId}/config">PATCH
@@ -900,10 +902,10 @@
                                         Send location</option>
                                     <option value="POST|/api/whatsapp/chats/send-contact">POST /chats/send-contact -
                                         Send contact</option>
-                                    <option value="POST|/api/whatsapp/chats/send-button">POST /chats/send-button - Send
-                                        button (uses Poll)</option>
                                     <option value="POST|/api/whatsapp/chats/send-poll">POST /chats/send-poll - Send
                                         poll message</option>
+                                    <option value="POST|/api/whatsapp/chats/send-button">POST /chats/send-button - Send
+                                        button (⚠️ deprecated, uses Poll)</option>
                                     <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Send typing
                                         indicator</option>
                                     <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number -
@@ -1069,6 +1071,9 @@
             <div class="footer-credit">
                 Made with ❤️ by <a href="https://github.com/farinchan" target="_blank">Farin Chan</a> |
                 <strong>Chatery API</strong> - WhatsApp Multi-Session Gateway
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                📊 <strong>Fitur:</strong> Text, Image, Document, Location, Contact, Poll, Bulk Messaging, Reply Messages
             </div>
             <div style="font-size: 12px; color: var(--text-muted);">
                 © <span id="footerYear"></span> Chatery. Open Source under MIT License.
@@ -1693,8 +1698,16 @@
             let helpText = '';
 
             // Sessions
-            if (path.includes('/sessions') && method === 'GET') {
+            if (path.includes('/sessions') && method === 'GET' && !path.includes('/qr/image')) {
                 showBody = false;
+                if (path.includes('/qr')) {
+                    helpText = '📱 Get QR code as base64 string in JSON format.';
+                } else if (path.includes('/status')) {
+                    helpText = '📊 Get current session connection status.';
+                }
+            } else if (path.includes('/sessions') && path.includes('/qr/image') && method === 'GET') {
+                showBody = false;
+                helpText = '🖼️ Get QR code as PNG image. Opens in new tab for easy scanning.';
             } else if (path.includes('/sessions') && path.includes('/webhooks') && method === 'POST') {
                 body = {
                     url: 'https://your-server.com/webhook',
@@ -2081,6 +2094,14 @@
             responseBox.textContent = 'Loading...';
 
             try {
+                // Special handling for QR image endpoint - open in new tab
+                if (path.includes('/qr/image')) {
+                    window.open(path, '_blank');
+                    responseBox.textContent = 'QR Image opened in new tab. Scan the QR code with your WhatsApp app.';
+                    showToast('success', 'QR Image opened in new tab');
+                    return;
+                }
+
                 const options = {
                     method: method,
                     headers: getApiHeaders(true)
