@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 const whatsappRoutes = require('./src/routes/whatsapp');
 
 // Import Middleware
-const apiKeyAuth = require('./src/middleware/apiKeyAuth');
+const userAuth = require('./src/middleware/UserAuth');
 
 // Import WebSocket Manager
 const wsManager = require('./src/services/websocket/WebSocketManager');
@@ -37,6 +37,10 @@ app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
 // Serve Dashboard
 app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/ui', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'ui.html'));
 });
 
 // Serve WebSocket test page
@@ -93,22 +97,88 @@ app.post('/api/dashboard/login', (req, res) => {
     }
 });
 
-// WebSocket Stats
-app.get('/api/websocket/stats', (req, res) => {
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  const result = await userAuth.authenticate({ username, password });  // ← add await
+
+  if (!result.success) {
+    return res.status(401).json(result);
+  }
+
+  res.json({
+    success: true,
+    key: result.user.apiKey,
+    username: result.user.username,
+    role: result.user.role
+  });
+});
+
+app.post('/api/admin/users', userAuth.validate, (req, res) => {
+    const result = userAuth.createUser(req.body);
+    res.status(result.success ? 201 : 400).json(result);
+});
+
+app.patch('/api/admin/users/:username', userAuth.validate, (req, res) => {
+    const result = userAuth.updateUser(req.params.username, req.body);
+    res.json(result);
+});
+
+app.get('/api/admin/users', userAuth.validate, (req, res) => {
+    const usersList = userAuth.getUsers();
     res.json({
         success: true,
-        data: wsManager.getStats()
+        data: usersList
+    });
+});
+
+app.get('/api/admin/users/:username', userAuth.validate, (req, res) => {
+    const user = userAuth.getUser({ username: req.params.username });
+    if (!user) {
+        return res.status(404).json({
+            success: false,
+            message: 'User not found'
+        });
+    }
+    res.json({
+        success: true,
+        data: user
+    });
+});
+
+app.get('/api/admin/users/me', userAuth.validate, (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Not authenticated'
+        });
+    }
+
+    res.json({
+        success: true,
+        data: {
+            username: req.user.username,
+            role: req.user.role,
+            apiKey: req.user.apiKey
+        }
     });
 });
 
 // WhatsApp Routes (with API Key Authentication)
-app.use('/api/whatsapp', apiKeyAuth, whatsappRoutes);
+app.use('/api/whatsapp', userAuth.validate, whatsappRoutes);
 
 // 404 Handler
 app.use((req, res) => {
     res.status(404).json({
         success: false,
         message: 'Route not found'
+    });
+});
+
+app.get('/api/websocket/stats', (req, res) => {
+    res.json({
+        success: true,
+        data: wsManager.getStats()
     });
 });
 
