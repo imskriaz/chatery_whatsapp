@@ -32,14 +32,13 @@ router.get('/sessions', (req, res) => {
 // Create/Connect a session
 router.post('/sessions/:sessionId/connect', async (req, res) => {
     try {
+        const providedKey = req.headers['x-api-key'];
         const { sessionId } = req.params;
         const { metadata, webhooks } = req.body;
         
         const options = {};
         if (metadata) options.metadata = metadata;
         if (webhooks) options.webhooks = webhooks;
-
-        const providedKey = req.headers['x-api-key'];
         options.owner = await userAuth.getUsername(providedKey);
         const result = await whatsappManager.createSession(sessionId, options);
         

@@ -5,8 +5,7 @@ const db = new DatabaseStore(); // "global"
 
 const userAuth = {
 
-    async authenticate({ username, password }) {
-    console.log('[LOGIN DEBUG] Attempt:', { username, passwordLength: password?.length });
+  async authenticate({ username, password }) {
 
     if (!username?.trim() || !password?.trim()) {
       return { success: false, message: 'Username and password are required' };
@@ -38,6 +37,17 @@ const userAuth = {
       return res.status(401).json({ success: false, message: 'Missing X-Api-Key header' });
     }
 
+    const dashboardApiKey = process.env.API_KEY;
+
+    if (dashboardApiKey === apiKey) {
+      const username = process.env.DASHBOARD_USERNAME;
+      req.user = {
+        username: username,
+        apiKey,
+        role: 'admin'
+      };
+    }
+
     const rows = await db.mysqlQuery(
       "SELECT username, role FROM users WHERE api_key = ? LIMIT 1",
       [apiKey]
@@ -63,15 +73,6 @@ const userAuth = {
       [apiKey.trim()]
     );
     return rows.length ? rows[0].username : false;
-  },
-
-  async getApiUser(apiKey) {
-    if (!apiKey?.trim()) return false;
-    const rows = await db.mysqlQuery(
-      "SELECT username, role FROM users WHERE api_key = ? LIMIT 1",
-      [apiKey.trim()]
-    );
-    return rows.length ? rows[0] : false;
   },
 
   isAdmin(req, res, next) {

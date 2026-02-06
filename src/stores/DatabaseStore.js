@@ -62,101 +62,133 @@ class DatabaseStore {
     console.log("[DatabaseStore] Checking and creating tables if needed...");
 
     const queries = [
-      // call_logs (unchanged)
       `CREATE TABLE IF NOT EXISTS call_logs (
-      session_id VARCHAR(100) NOT NULL,
-      call_id VARCHAR(100) NOT NULL,
-      caller_jid VARCHAR(255) NOT NULL,
-      is_group TINYINT(1) DEFAULT 0,
-      is_video TINYINT(1) DEFAULT 0,
-      status ENUM('missed','answered','rejected','unknown') DEFAULT 'unknown',
-      timestamp BIGINT NOT NULL,
-      duration_seconds INT DEFAULT NULL,
-      PRIMARY KEY (session_id, call_id),
-      INDEX idx_session (session_id),
-      INDEX idx_timestamp (session_id, timestamp DESC)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+        session_id VARCHAR(100) NOT NULL,
+        call_id VARCHAR(100) NOT NULL,
+        caller_jid VARCHAR(255) NOT NULL,
+        is_group TINYINT(1) DEFAULT 0,
+        is_video TINYINT(1) DEFAULT 0,
+        status ENUM('missed','answered','rejected','unknown') DEFAULT 'unknown',
+        timestamp BIGINT NOT NULL,
+        duration_seconds INT DEFAULT NULL,
+        PRIMARY KEY (session_id, call_id),
+        INDEX idx_session (session_id),
+        INDEX idx_timestamp (session_id, timestamp DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-      // chats (unchanged)
       `CREATE TABLE IF NOT EXISTS chats (
-      session_id VARCHAR(100) NOT NULL,
-      id VARCHAR(255) NOT NULL,
-      name VARCHAR(255) DEFAULT NULL,
-      is_group TINYINT(1) DEFAULT 0,
-      unread_count INT DEFAULT 0,
-      last_message_timestamp BIGINT DEFAULT NULL,
-      archived TINYINT(1) DEFAULT 0,
-      pinned TINYINT(1) DEFAULT 0,
-      muted_until BIGINT DEFAULT 0,
-      PRIMARY KEY (session_id, id),
-      INDEX idx_session (session_id),
-      INDEX idx_timestamp (session_id, last_message_timestamp DESC)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+        session_id VARCHAR(100) NOT NULL,
+        id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) DEFAULT NULL,
+        is_group TINYINT(1) DEFAULT 0,
+        unread_count INT DEFAULT 0,
+        last_message_timestamp BIGINT DEFAULT NULL,
+        archived TINYINT(1) DEFAULT 0,
+        pinned TINYINT(1) DEFAULT 0,
+        muted_until BIGINT DEFAULT 0,
+        PRIMARY KEY (session_id, id),
+        INDEX idx_session (session_id),
+        INDEX idx_timestamp (session_id, last_message_timestamp DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-      // chats_overview (unchanged - no DEFAULT on LONGTEXT)
       `CREATE TABLE IF NOT EXISTS chats_overview (
-      session_id VARCHAR(100) NOT NULL,
-      chat_id VARCHAR(255) NOT NULL,
-      last_message_preview LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (JSON_VALID(last_message_preview)),
-      unread_count INT DEFAULT 0,
-      PRIMARY KEY (session_id, chat_id),
-      INDEX idx_session (session_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+        session_id VARCHAR(100) NOT NULL,
+        chat_id VARCHAR(255) NOT NULL,
+        last_message_preview LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+        unread_count INT DEFAULT 0,
+        PRIMARY KEY (session_id, chat_id),
+        INDEX idx_session (session_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-      // contacts (unchanged)
       `CREATE TABLE IF NOT EXISTS contacts (
-      session_id VARCHAR(100) NOT NULL,
-      id VARCHAR(255) NOT NULL,
-      lid VARCHAR(255) DEFAULT NULL,
-      phone VARCHAR(50) DEFAULT NULL,
-      name VARCHAR(255) DEFAULT NULL,
-      notify VARCHAR(255) DEFAULT NULL,
-      verified_name VARCHAR(255) DEFAULT NULL,
-      PRIMARY KEY (id),
-      INDEX idx_session (session_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+        session_id VARCHAR(100) NOT NULL,
+        id VARCHAR(255) NOT NULL,
+        lid VARCHAR(255) DEFAULT NULL,
+        phone VARCHAR(50) DEFAULT NULL,
+        name VARCHAR(255) DEFAULT NULL,
+        notify VARCHAR(255) DEFAULT NULL,
+        verified_name VARCHAR(255) DEFAULT NULL,
+        profile_picture_url TEXT DEFAULT NULL,
+        about TEXT DEFAULT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id, id),
+        INDEX idx_phone (session_id, phone),
+        INDEX idx_name (session_id, name)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-      // device_blocklist — FIXED: removed DEFAULT '[]'
       `CREATE TABLE IF NOT EXISTS device_blocklist (
-      session_id VARCHAR(100) NOT NULL,
-      blocked_jids LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-      last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (session_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+        session_id VARCHAR(100) NOT NULL,
+        blocked_jids LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-      // group_metadata (unchanged - no DEFAULT on participants)
       `CREATE TABLE IF NOT EXISTS group_metadata (
-      session_id VARCHAR(100) NOT NULL,
-      id VARCHAR(255) NOT NULL,
-      subject VARCHAR(255) DEFAULT NULL,
-      subject_owner VARCHAR(255) DEFAULT NULL,
-      subject_time BIGINT DEFAULT NULL,
-      description TEXT DEFAULT NULL,
-      is_restricted TINYINT(1) DEFAULT 0,
-      is_announced TINYINT(1) DEFAULT 0,
-      size INT DEFAULT NULL,
-      creation BIGINT DEFAULT NULL,
-      owner VARCHAR(255) DEFAULT NULL,
-      participants LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (JSON_VALID(participants)),
-      PRIMARY KEY (id),
-      INDEX idx_session (session_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+        session_id VARCHAR(100) NOT NULL,
+        id VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) DEFAULT NULL,
+        subject_owner VARCHAR(255) DEFAULT NULL,
+        subject_time BIGINT DEFAULT NULL,
+        description TEXT DEFAULT NULL,
+        is_restricted TINYINT(1) DEFAULT 0,
+        is_announced TINYINT(1) DEFAULT 0,
+        participant_count INT DEFAULT NULL,
+        creation BIGINT DEFAULT NULL,
+        owner VARCHAR(255) DEFAULT NULL,
+        participants LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id, id),
+        INDEX idx_session (session_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-      // media_files, messages, profile_pictures, users — unchanged
-      // ... (keep as they are - no problematic DEFAULTs)
+      `CREATE TABLE IF NOT EXISTS messages (
+        session_id VARCHAR(100) NOT NULL,
+        chat_id VARCHAR(255) NOT NULL,
+        message_id VARCHAR(255) NOT NULL,
+        sender_jid VARCHAR(255) NOT NULL,
+        from_me TINYINT(1) DEFAULT 0,
+        type ENUM('text','image','video','audio','document','sticker','location','contact','reaction','revoke','other') DEFAULT 'other',
+        content TEXT DEFAULT NULL,
+        caption TEXT DEFAULT NULL,
+        timestamp BIGINT NOT NULL,
+        status ENUM('sent','delivered','read','played','failed') DEFAULT 'sent',
+        media_path VARCHAR(512) DEFAULT NULL,
+        raw_json LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+        PRIMARY KEY (session_id, chat_id, message_id),
+        INDEX idx_chat (session_id, chat_id),
+        INDEX idx_timestamp (session_id, timestamp DESC),
+        INDEX idx_sender (session_id, sender_jid)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+      `CREATE TABLE IF NOT EXISTS profile_pictures (
+        session_id VARCHAR(100) NOT NULL,
+        jid VARCHAR(255) NOT NULL,
+        url TEXT DEFAULT NULL,
+        thumbnail_url TEXT DEFAULT NULL,
+        fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id, jid)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+      `CREATE TABLE IF NOT EXISTS users (
+        username VARCHAR(100) NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        role ENUM('admin','moderator','user') DEFAULT 'user',
+        api_key VARCHAR(255) NOT NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (username),
+        INDEX idx_api_key (api_key)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`
     ];
 
     for (const query of queries) {
       try {
         await this.mysqlQuery(query);
         const tableName = query.match(/TABLE IF NOT EXISTS\s+`?(\w+)`?/)?.[1] || 'unknown';
-        console.log(`[DatabaseStore] Table ensured: ${tableName}`);
       } catch (err) {
         console.error(`[DatabaseStore] Failed to create table:`, err.message);
       }
     }
-
-    console.log("[DatabaseStore] All tables checked/created successfully");
   }
 
   async mysqlQuery(sql, params = [], maxRetries = 3) {
