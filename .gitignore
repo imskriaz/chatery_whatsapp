@@ -6,3 +6,4 @@ auth_info/
 sessions/
 public/media/
 n8n-nodes-chatery-whatsapp/
+package-lock.json
