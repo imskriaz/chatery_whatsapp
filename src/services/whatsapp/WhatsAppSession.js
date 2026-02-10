@@ -654,16 +654,15 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
   try {
     if (!this.db) return { success: false, message: 'Database not initialized' };
 
-    let query = `SELECT co.chat_id, c.name, c.is_group, co.last_message_preview, co.unread_count, c.last_message_timestamp, c.archived, c.pinned, c.muted_until FROM chats_overview co LEFT JOIN chats c ON c.session_id = co.session_id AND c.id = co.chat_id WHERE co.session_id = ?`;
+    let query = `SELECT co.chat_id, c.name, c.is_group, co.last_message_preview, co.unread_count, c.last_message_timestamp, c.archived, c.pinned, c.muted_until FROM chats_overview co LEFT JOIN chats c ON c.session_id = co.session_id AND c.id = co.chat_id WHERE co.session_id = '${this.sessionId}'`;
 
-    const params = [this.sessionId];
+    const params = [];
 
     if (type === 'unread') query += ` AND co.unread_count > 0`;
     else if (type === 'archived') query += ` AND c.archived = 1`;
     else if (type === 'pinned') query += ` AND c.pinned = 1`;
 
-    query += ` ORDER BY c.pinned DESC, c.last_message_timestamp DESC LIMIT ? OFFSET ?`;
-    params.push(Number(limit), Number(offset));    
+    query += ` ORDER BY c.pinned DESC, c.last_message_timestamp DESC LIMIT ${limit} OFFSET ${offset}`;  
 
     const rows = await this.db.mysqlQuery(query, params);
     console.log(query, params,rows);

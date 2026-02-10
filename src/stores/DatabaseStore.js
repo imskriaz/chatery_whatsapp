@@ -10,21 +10,18 @@ class DatabaseStore {
   constructor(sessionId = "global") {
     this.sessionId = sessionId.replace(/[\/\\:*?"<>|]/g, "_");
 
-    const isDev = process.env.NODE_ENV !== "production";
-
     this.mysqlPool = mysql.createPool({
       host: process.env.MYSQL_HOST || "127.0.0.1",
       port: Number(process.env.MYSQL_PORT) || 3306,
       user: process.env.MYSQL_USER || "root",
       password: process.env.MYSQL_PASSWORD || "",
       database: process.env.MYSQL_DATABASE || "whatsapp",
-      connectionLimit: 50,
-      queueLimit: 500,
+      connectionLimit: 100,
+      queueLimit: 1500,
       waitForConnections: true,
       timezone: "+00:00",
       supportBigNumbers: true,
       bigNumberStrings: true,
-      namedPlaceholders: true,
       multipleStatements: true,
     });
 
@@ -193,7 +190,7 @@ class DatabaseStore {
         console.warn({
           attempt,
           maxRetries,
-          sql: sql.substring(0, 150) + (sql.length > 150 ? '...' : ''),
+          sql: sql,
           params,
           error: err.message
         }, "mysqlQuery failed");
@@ -368,14 +365,26 @@ class DatabaseStore {
         for (const chat of chats) await this._upsertChat(chat, conn);
       });
     });
-    ev.on("chats.upsert", async (chats) => {
-      if (!Array.isArray(chats)) return;
-      for (const chat of chats) await this._upsertChat(chat);
+ev.on("chats.upsert", async (chats) => {
+  if (!Array.isArray(chats)) return;
+  for (const chat of chats) {
+    await this._upsertChat(chat);
+    await this._upsertChatOverview(chat.id, {
+      unread_count: chat.unreadCount || 0
     });
-    ev.on("chats.update", async (updates) => {
-      if (!Array.isArray(updates)) return;
-      for (const u of updates) await this._upsertChat(u);
-    });
+  }
+});
+ev.on("chats.update", async (updates) => {
+  if (!Array.isArray(updates)) return;
+  for (const u of updates) {
+    await this._upsertChat(u);
+    if ('unreadCount' in u) {
+      await this._upsertChatOverview(u.id, {
+        unread_count: u.unreadCount
+      });
+    }
+  }
+});
     ev.on("chats.delete", async (ids) => {
       if (!Array.isArray(ids)) ids = [ids];
       if (!ids.length) return;
@@ -458,6 +467,18 @@ class DatabaseStore {
          ON DUPLICATE KEY UPDATE timestamp=VALUES(timestamp), raw_json=VALUES(raw_json)`,
         values.flat()
       );
+      if (messages.length > 0) {
+        const latest = messages[messages.length - 1];
+        if (latest?.key?.remoteJid) {
+          const preview = require('./MessageFormatter').formatLastMessagePreview(latest);
+          if (preview) {
+            await this._upsertChatOverview(latest.key.remoteJid, {
+              last_message_preview: preview
+            });
+          }
+        }
+      }
+
     });
     ev.on("messages.update", async (updates) => {
       if (!Array.isArray(updates)) return;
@@ -701,7 +722,36 @@ class DatabaseStore {
       ]
     );
   }
+async _upsertChatOverview(chatId, updates = {}) {
+  const fields = [];
+  const values = [this.sessionId, chatId];
+  const updateClauses = [];
 
+  if ('last_message_preview' in updates) {
+    fields.push("last_message_preview = ?");
+    values.push(updates.last_message_preview ? JSON.stringify(updates.last_message_preview) : null);
+    updateClauses.push("last_message_preview = VALUES(last_message_preview)");
+  }
+
+  if ('unread_count' in updates) {
+    fields.push("unread_count = ?");
+    values.push(updates.unread_count);
+    updateClauses.push("unread_count = VALUES(unread_count)");
+  }
+
+  if (fields.length === 0) return;
+
+  const insertFields = fields.length ? `, ${fields.join(', ')}` : '';
+  const insertValues = fields.length ? `, ${fields.map(() => '?').join(', ')}` : '';
+
+  const sql = `
+    INSERT INTO chats_overview (session_id, chat_id ${insertFields})
+    VALUES (?, ? ${insertValues})
+    ON DUPLICATE KEY UPDATE ${updateClauses.join(', ')}
+  `;
+
+  await this.mysqlQuery(sql, values);
+}
   async _upsertCall(call) {
     console.log(call);
     if (!call?.id || !call?.from) return;
