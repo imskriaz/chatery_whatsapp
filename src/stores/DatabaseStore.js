@@ -190,7 +190,7 @@ class DatabaseStore {
         return rows;
       } catch (err) {
         lastError = err;
-        this.logger.warn({
+        console.warn({
           attempt,
           maxRetries,
           sql: sql.substring(0, 150) + (sql.length > 150 ? '...' : ''),

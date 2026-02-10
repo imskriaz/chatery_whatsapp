@@ -663,9 +663,7 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
     else if (type === 'pinned') query += ` AND c.pinned = 1`;
 
     query += ` ORDER BY c.pinned DESC, c.last_message_timestamp DESC LIMIT ? OFFSET ?`;
-    params.push(Number(limit), Number(offset));
-
-    
+    params.push(Number(limit), Number(offset));    
 
     const rows = await this.db.mysqlQuery(query, params);
     console.log(query, params,rows);
