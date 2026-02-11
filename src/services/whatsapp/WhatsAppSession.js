@@ -30,6 +30,7 @@ class WhatsAppSession {
     this.name = null;
     this.metadata = options.metadata || {};
 <<<<<<< HEAD
+<<<<<<< HEAD
     this.username = options.username || null;
 
     this._initialSyncDone = false;
@@ -47,23 +48,41 @@ class WhatsAppSession {
     this.message = new MessageManager(this);
 =======
     this.webhooks = options.webhooks || [];
+=======
+>>>>>>> fb40ef6 (updated DB)
     this.username = options.username || null;
 
-    console.log("WhatsAppSession", this.username);
+    this._initialSyncDone = false;
+    this._groupCache = null;
+    this._groupCacheTTL = 5 * 60 * 1000; // 5 minutes
+
+    console.log(`[${this.sessionId}] WhatsAppSession initialized for ${this.username || 'unknown'}`);
 
     this._loadConfig();
     this.db = new DatabaseStore(this.sessionId, this.username);
+<<<<<<< HEAD
 >>>>>>> 8c2ffd1 (updated)
+=======
+
+    // Sub-managers (each handles its domain)
+    this.webhook = new WebhookManager(this);
+    this.group = new GroupManager(this);
+    this.message = new MessageManager(this);
+>>>>>>> fb40ef6 (updated DB)
   }
 
   _loadConfig() {
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb40ef6 (updated DB)
       const file = path.join(this.authFolder, 'config.json');
       if (fs.existsSync(file)) {
         const cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
         Object.assign(this.metadata, cfg.metadata || {});
         this.username = cfg.username || this.username;
+<<<<<<< HEAD
 =======
       if (fs.existsSync(this.configFile)) {
         const config = JSON.parse(fs.readFileSync(this.configFile, 'utf8'));
@@ -71,6 +90,8 @@ class WhatsAppSession {
         this.webhooks = config.webhooks || this.webhooks;
         this.username = config.username || this.username;
 >>>>>>> 8c2ffd1 (updated)
+=======
+>>>>>>> fb40ef6 (updated DB)
       }
     } catch (err) {
       console.warn(`[${this.sessionId}] Failed to load config: ${err.message}`);
@@ -78,6 +99,9 @@ class WhatsAppSession {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb40ef6 (updated DB)
   normalizeJid(input, preferGroup = false) {
     if (!input || typeof input !== 'string') return null;
     let jid = input.trim().replace(/\s+/g, '');
@@ -86,6 +110,7 @@ class WhatsAppSession {
     if (digits.length < 9) return null;
     let cc = digits.startsWith('0') ? '62' + digits.slice(1) : digits;
     return cc + (preferGroup ? '@g.us' : '@s.whatsapp.net');
+<<<<<<< HEAD
 =======
   _saveConfig() {
     try {
@@ -172,6 +197,8 @@ class WhatsAppSession {
 
     Promise.all(promises).catch(() => {});
 >>>>>>> 8c2ffd1 (updated)
+=======
+>>>>>>> fb40ef6 (updated DB)
   }
 
   async connect() {
@@ -389,6 +416,7 @@ async _performInitialSync() {
       name: this.name,
       qrCode: this.qrCode,
       metadata: this.metadata,
+<<<<<<< HEAD
 <<<<<<< HEAD
       username: this.username
     };
@@ -1606,6 +1634,11 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
     }
   }
 >>>>>>> 8c2ffd1 (updated)
+=======
+      username: this.username
+    };
+  }
+>>>>>>> fb40ef6 (updated DB)
 }
 
 module.exports = WhatsAppSession;

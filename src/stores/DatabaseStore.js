@@ -224,9 +224,13 @@ async ensureTables() {
       session_id VARCHAR(100) NOT NULL,
       username VARCHAR(100) DEFAULT NULL,
 <<<<<<< HEAD
+<<<<<<< HEAD
       jid VARCHAR(255) NOT NULL,
 =======
 >>>>>>> 8c2ffd1 (updated)
+=======
+      jid VARCHAR(255) NOT NULL,
+>>>>>>> fb40ef6 (updated DB)
       blocked_jids LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
       last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (session_id)
@@ -358,10 +362,13 @@ async ensureTables() {
           );
           console.log(`[${this.sessionId}] Created index ${idx.name} on ${idx.table}`);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         } else {
           console.log(`[${this.sessionId}] Index ${idx.name} on ${idx.table} already exists`);
 >>>>>>> 8c2ffd1 (updated)
+=======
+>>>>>>> fb40ef6 (updated DB)
         }
       }
 
@@ -369,10 +376,14 @@ async ensureTables() {
     } catch (err) {
       console.error(`[${this.sessionId}] Critical error during ensureTables:`, err.message, err);
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw err; 
 =======
       throw err; // rollback
 >>>>>>> 8c2ffd1 (updated)
+=======
+      throw err; 
+>>>>>>> fb40ef6 (updated DB)
     }
   });
 }
@@ -1381,10 +1392,14 @@ async ensureTables() {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   async deleteSession(sessionId) {
 =======
   async delete(sessionId) {
 >>>>>>> 8c2ffd1 (updated)
+=======
+  async deleteSession(sessionId) {
+>>>>>>> fb40ef6 (updated DB)
     const session_id = (sessionId || '').trim();
     
     if (!session_id) {

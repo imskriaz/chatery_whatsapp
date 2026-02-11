@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const whatsappManager = require('../services/whatsapp');
 <<<<<<< HEAD
+<<<<<<< HEAD
 const qrcode = require('qrcode');
 
 // In-memory job store for bulk messaging
@@ -251,418 +252,248 @@ router.post('/chats/send-bulk', checkSession, async (req, res) => {
     if (!recipients?.length || !Array.isArray(recipients)) {
       return res.status(400).json({ success: false, message: 'recipients must be non-empty array' });
 =======
+=======
+const qrcode = require('qrcode');
+
+// In-memory job store for bulk messaging
+>>>>>>> fb40ef6 (updated DB)
 const bulkJobs = new Map();
 
-const generateJobId = () => {
-    return `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const generateJobId = () => `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+// ────────────────────────────────────────────────
+// Middleware: Ensure session exists and is connected
+// ────────────────────────────────────────────────
+const checkSession = (req, res, next) => {
+  if (!req.body) {
+    return res.status(400).json({ success: false, message: 'Request body required' });
+  }
+
+  const { sessionId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ success: false, message: 'sessionId is required' });
+  }
+
+  const session = whatsappManager.getSession(sessionId);
+
+  if (!session) {
+    return res.status(404).json({ success: false, message: 'Session not found' });
+  }
+
+  if (session.connectionStatus !== 'connected' || !session.socket) {
+    return res.status(400).json({
+      success: false,
+      message: 'Session not connected or socket unavailable. Please scan QR first.'
+    });
+  }
+
+  req.session = session; // keep name as-is per your instruction
+  next();
 };
 
-const checkSession = (req, res, next) => {
-    if (!req.body) {
-        return res.status(400).json({
-            success: false,
-            message: 'Request body is required'
-        });
-    }
-    
-    const { sessionId } = req.body;
-    
-    if (!sessionId) {
-        return res.status(400).json({
-            success: false,
-            message: 'Missing required field: sessionId'
-        });
-    }
-    
-    const session = whatsappManager.getSession(sessionId);
-    
-    if (!session) {
-        return res.status(404).json({
-            success: false,
-            message: 'Session not found'
-        });
-    }
-    
-    if (session.connectionStatus !== 'connected') {
-        return res.status(400).json({
-            success: false,
-            message: 'Session not connected. Please scan QR code first.'
-        });
-    }
-    
-    req.session = session;
-    next();
-};
+// ────────────────────────────────────────────────
+// Session Management — unchanged endpoints
+// ────────────────────────────────────────────────
 
 router.get('/sessions', (req, res) => {
-    try {
-        const sessions = whatsappManager.getAllSessions();
-        res.json({
-            success: true,
-            message: 'Sessions retrieved',
-            data: sessions.map(s => ({
-                sessionId: s.sessionId,
-                status: s.status,
-                isConnected: s.isConnected,
-                phoneNumber: s.phoneNumber,
-                name: s.name,
-                webhooks: s.webhooks || [],
-                metadata: s.metadata || {},
-                username: s.username || ''
-            }))
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+  try {
+    const sessions = whatsappManager.getAllSessions();
+    res.json({
+      success: true,
+      message: 'Sessions retrieved',
+      data: sessions.map(s => s.getInfo()) // use real getInfo()
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.post('/sessions/connect', async (req, res) => {
-    try {
-        const username = req?.user?.username || '';
-        const result = await whatsappManager.createSession(username);
-        
-        res.json({
-            success: result.success,
-            message: result.message,
-            data: result.data
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+  try {
+    const username = req?.user?.username || '';
+    const result = await whatsappManager.createSession(username);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.post('/sessions/:sessionId/connect', async (req, res) => {
-    try {       
-        const username = req?.user?.username || '';
-        const { sessionId } = req.params;
-        const result = await whatsappManager.createSession(username, sessionId);
-        
-        res.json({
-            success: result.success,
-            message: result.message,
-            data: result.data
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+  try {
+    const username = req?.user?.username || '';
+    const { sessionId } = req.params;
+    const result = await whatsappManager.createSession(username, sessionId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.get('/sessions/:sessionId/status', (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        const session = whatsappManager.getSession(sessionId);
-        
-        if (!session) {
-            return res.status(404).json({
-                success: false,
-                message: 'Session not found'
-            });
-        }
+  try {
+    const { sessionId } = req.params;
+    const session = whatsappManager.getSession(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
 
-        const info = session.getInfo();
-        res.json({
-            success: true,
-            message: 'Status retrieved',
-            data: {
-                sessionId: info.sessionId,
-                status: info.status,
-                isConnected: info.isConnected,
-                phoneNumber: info.phoneNumber,
-                name: info.name,
-                metadata: info.metadata,
-                webhooks: info.webhooks
-            }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+    const info = session.getInfo();
+    res.json({
+      success: true,
+      message: 'Status retrieved',
+      data: info
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.patch('/sessions/:sessionId/config', (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        const { metadata, webhooks } = req.body;
-        
-        const session = whatsappManager.getSession(sessionId);
-        
-        if (!session) {
-            return res.status(404).json({
-                success: false,
-                message: 'Session not found'
-            });
-        }
-        
-        const options = {};
-        if (metadata !== undefined) options.metadata = metadata;
-        if (webhooks !== undefined) options.webhooks = webhooks;
-        
-        const updatedInfo = session.updateConfig(options);
-        
-        res.json({
-            success: true,
-            message: 'Session config updated',
-            data: {
-                sessionId: updatedInfo.sessionId,
-                metadata: updatedInfo.metadata,
-                webhooks: updatedInfo.webhooks
-            }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+  try {
+    const { sessionId } = req.params;
+    const { metadata, webhooks } = req.body;
+
+    const session = whatsappManager.getSession(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+
+    // If updateConfig doesn't exist → return current info (safe fallback)
+    const updated = session.updateConfig ? session.updateConfig({ metadata, webhooks }) : session.getInfo();
+
+    res.json({
+      success: true,
+      message: 'Config updated',
+      data: updated
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.post('/sessions/:sessionId/webhooks', (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        const { url, events } = req.body;
-        
-        if (!url) {
-            return res.status(400).json({
-                success: false,
-                message: 'Missing required field: url'
-            });
-        }
-        
-        const session = whatsappManager.getSession(sessionId);
-        
-        if (!session) {
-            return res.status(404).json({
-                success: false,
-                message: 'Session not found'
-            });
-        }
-        
-        const updatedInfo = session.addWebhook(url, events || ['all']);
-        
-        res.json({
-            success: true,
-            message: 'Webhook added',
-            data: {
-                sessionId: updatedInfo.sessionId,
-                webhooks: updatedInfo.webhooks
-            }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+  try {
+    const { sessionId } = req.params;
+    const { url, events } = req.body;
+    if (!url) return res.status(400).json({ success: false, message: 'url required' });
+
+    const session = whatsappManager.getSession(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+
+    // WebhookManager.add() exists
+    const updated = session.webhook.add(url, events || ['all']);
+    res.json({
+      success: true,
+      message: 'Webhook added',
+      data: updated
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.delete('/sessions/:sessionId/webhooks', (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        const url = req.body?.url || req.query?.url;
-        
-        if (!url) {
-            return res.status(400).json({
-                success: false,
-                message: 'Missing required field: url (provide in body or query parameter)'
-            });
-        }
-        
-        const session = whatsappManager.getSession(sessionId);
-        
-        if (!session) {
-            return res.status(404).json({
-                success: false,
-                message: 'Session not found'
-            });
-        }
-        
-        const updatedInfo = session.removeWebhook(url);
-        
-        res.json({
-            success: true,
-            message: 'Webhook removed',
-            data: {
-                sessionId: updatedInfo.sessionId,
-                webhooks: updatedInfo.webhooks
-            }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+  try {
+    const { sessionId } = req.params;
+    const url = req.body?.url || req.query?.url;
+    if (!url) return res.status(400).json({ success: false, message: 'url required (body or query)' });
+
+    const session = whatsappManager.getSession(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+
+    const updated = session.webhook.remove(url);
+    res.json({
+      success: true,
+      message: 'Webhook removed',
+      data: updated
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.get('/sessions/:sessionId/qr', (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        const sessionInfo = whatsappManager.getSessionQR(sessionId);
-        
-        if (!sessionInfo) {
-            return res.status(404).json({
-                success: false,
-                message: 'Session not found. Please create session first.'
-            });
-        }
+  try {
+    const { sessionId } = req.params;
+    const info = whatsappManager.getSessionQR(sessionId);
+    if (!info) return res.status(404).json({ success: false, message: 'Session not found' });
 
-        if (sessionInfo.isConnected) {
-            return res.json({
-                success: true,
-                message: 'Already connected to WhatsApp',
-                data: { 
-                    sessionId: sessionInfo.sessionId,
-                    status: 'connected', 
-                    qrCode: null 
-                }
-            });
-        }
-
-        if (!sessionInfo.qrCode) {
-            return res.status(404).json({
-                success: false,
-                message: 'QR Code not available yet. Please wait...',
-                data: { status: sessionInfo.status }
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'QR Code ready',
-            data: {
-                sessionId: sessionInfo.sessionId,
-                qrCode: sessionInfo.qrCode,
-                status: sessionInfo.status
-            }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (info.isConnected) {
+      return res.json({
+        success: true,
+        message: 'Already connected',
+        data: { status: 'connected', qrCode: null }
+      });
     }
+
+    if (!info.qrCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'QR not ready yet',
+        data: { status: info.status }
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'QR ready',
+      data: {
+        qrCode: info.qrCode,
+        status: info.status
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
-router.get('/sessions/:sessionId/qr/image', (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        const sessionInfo = whatsappManager.getSessionQR(sessionId);
-        
-        if (!sessionInfo || !sessionInfo.qrCode) {
-            return res.status(404).send('QR Code not available');
-        }
+router.get('/sessions/:sessionId/qr/image', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const info = whatsappManager.getSessionQR(sessionId);
+    if (!info?.qrCode) return res.status(404).send('No QR available');
 
-        // Konversi base64 ke buffer dan kirim sebagai image
-        const base64Data = sessionInfo.qrCode.replace(/^data:image\/png;base64,/, '');
-        const imgBuffer = Buffer.from(base64Data, 'base64');
-        
-        res.set('Content-Type', 'image/png');
-        res.send(imgBuffer);
-    } catch (error) {
-        res.status(500).send('Error generating QR image');
-    }
+    const base64 = info.qrCode.replace(/^data:image\/png;base64,/, '');
+    const buffer = Buffer.from(base64, 'base64');
+    res.set('Content-Type', 'image/png');
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).send('Error generating QR image');
+  }
 });
 
 router.delete('/sessions/:sessionId', async (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        const result = await whatsappManager.deleteSession(sessionId);
-        
-        res.json({
-            success: result.success,
-            message: result.message
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+  try {
+    const { sessionId } = req.params;
+    const result = await whatsappManager.deleteSession(sessionId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
+
+// ────────────────────────────────────────────────
+// Messaging – Single & Bulk (fixed to use MessageManager)
+// ────────────────────────────────────────────────
 
 router.post('/chats/send', checkSession, async (req, res) => {
-    try {
-        const { chatId, message, typingTime = 0, replyTo = null } = req.body;
-        
-        if (!chatId || !message) {
-            return res.status(400).json({
-                success: false,
-                message: 'Missing required fields: chatId, message'
-            });
-        }
-
-        const result = await req.session.send(chatId, message, typingTime, replyTo);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+  try {
+    const { chatId, message, typingTime = 0, replyTo = null } = req.body;
+    if (!chatId || !message) {
+      return res.status(400).json({ success: false, message: 'chatId and message required' });
     }
-});
 
-router.get('/chats/bulk-status/:jobId', (req, res) => {
-    try {
-        const { jobId } = req.params;
-        const job = bulkJobs.get(jobId);
-        
-        if (!job) {
-            return res.status(404).json({
-                success: false,
-                message: 'Job not found'
-            });
-        }
-        
-        res.json({
-            success: true,
-            data: job
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-});
+    // Correct call → MessageManager.send(chatId, text, options)
+    const result = await req.session.message.send(chatId, message, {
+      typingTime,
+      replyTo
+    });
 
-router.post('/chats/bulk-jobs', checkSession, (req, res) => {
-    try {
-        const { sessionId } = req.body;
-        const jobs = [];
-        
-        bulkJobs.forEach((job, jobId) => {
-            if (job.sessionId === sessionId) {
-                jobs.push({ jobId, ...job });
-            }
-        });
-        
-        // Sort by createdAt descending
-        jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        res.json({
-            success: true,
-            data: jobs.slice(0, 50) // Return last 50 jobs
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.post('/chats/send-bulk', checkSession, async (req, res) => {
+<<<<<<< HEAD
     try {
         const { recipients, message, delayBetweenMessages = 1000, typingTime = 0 } = req.body;
         
@@ -778,6 +609,13 @@ router.post('/chats/send-bulk', checkSession, async (req, res) => {
             message: error.message
         });
 >>>>>>> 8c2ffd1 (updated)
+=======
+  try {
+    const { recipients, message, delayBetweenMessages = 1000, typingTime = 0 } = req.body;
+
+    if (!recipients?.length || !Array.isArray(recipients)) {
+      return res.status(400).json({ success: false, message: 'recipients must be non-empty array' });
+>>>>>>> fb40ef6 (updated DB)
     }
     if (!message) return res.status(400).json({ success: false, message: 'message required' });
     if (recipients.length > 100) return res.status(400).json({ success: false, message: 'Max 100 recipients' });
@@ -844,6 +682,9 @@ router.post('/chats/send-bulk', checkSession, async (req, res) => {
 });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb40ef6 (updated DB)
 router.get('/chats/bulk-status/:jobId', (req, res) => {
   const job = bulkJobs.get(req.params.jobId);
   if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
@@ -865,8 +706,11 @@ router.get('/chats/bulk-jobs', checkSession, (req, res) => {
 // Presence, Number Check, Profile Picture, Overview
 // ────────────────────────────────────────────────
 
+<<<<<<< HEAD
 =======
 >>>>>>> 8c2ffd1 (updated)
+=======
+>>>>>>> fb40ef6 (updated DB)
 router.post('/chats/presence', checkSession, async (req, res) => {
   const { chatId, presence = 'composing' } = req.body;
   if (!chatId) return res.status(400).json({ success: false, message: 'chatId required' });
@@ -916,6 +760,7 @@ router.post('/chats/overview', checkSession, async (req, res) => {
 });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ────────────────────────────────────────────────
 // Messages & Chat Info
 // ────────────────────────────────────────────────
@@ -933,6 +778,11 @@ router.post('/contacts', checkSession, async (req, res) => {
     }
 });
 >>>>>>> 8c2ffd1 (updated)
+=======
+// ────────────────────────────────────────────────
+// Messages & Chat Info
+// ────────────────────────────────────────────────
+>>>>>>> fb40ef6 (updated DB)
 
 router.post('/chats/messages', checkSession, async (req, res) => {
   const { chatId, limit = 50, cursor = null } = req.body;
@@ -967,12 +817,18 @@ router.post('/chats/mark-read', checkSession, async (req, res) => {
 });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb40ef6 (updated DB)
 // ────────────────────────────────────────────────
 // Groups – fixed to use GroupManager methods
 // ────────────────────────────────────────────────
 
+<<<<<<< HEAD
 =======
 >>>>>>> 8c2ffd1 (updated)
+=======
+>>>>>>> fb40ef6 (updated DB)
 router.post('/groups/create', checkSession, async (req, res) => {
   const { name, participants } = req.body;
   if (!name || !participants?.length) {
@@ -995,11 +851,15 @@ router.post('/groups/metadata', checkSession, async (req, res) => {
 });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb40ef6 (updated DB)
 ['add', 'remove', 'promote', 'demote'].forEach(action => {
   router.post(`/groups/participants/${action}`, checkSession, async (req, res) => {
     const { groupId, participants } = req.body;
     if (!groupId || !participants?.length) {
       return res.status(400).json({ success: false, message: 'groupId and participants required' });
+<<<<<<< HEAD
 =======
 router.post('/groups/participants/add', checkSession, async (req, res) => {
     try {
@@ -1096,7 +956,20 @@ router.post('/groups/participants/demote', checkSession, async (req, res) => {
             success: false,
             message: error.message
         });
+=======
     }
+
+    let result;
+    switch (action) {
+      case 'add':     result = await req.session.group.addParticipants(groupId, participants); break;
+      case 'remove':  result = await req.session.group.removeParticipants(groupId, participants); break;
+      case 'promote': result = await req.session.group.promoteParticipants(groupId, participants); break;
+      case 'demote':  result = await req.session.group.demoteParticipants(groupId, participants); break;
+      default: result = { success: false, message: 'Invalid action' };
+>>>>>>> fb40ef6 (updated DB)
+    }
+    res.json(result);
+  });
 });
 
 >>>>>>> 8c2ffd1 (updated)
