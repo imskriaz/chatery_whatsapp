@@ -1,7 +1,11 @@
 // src/services/whatsapp/MessageManager.js
 
-const { downloadMediaMessage, getContentType } = require('@whiskeysockets/baileys');
-const MessageFormatter = require('./MessageFormatter');
+const {
+  downloadMediaMessage,
+  getContentType
+} = require('@whiskeysockets/baileys');
+
+const Utilities = require('./Utilities');
 
 class MessageManager {
   constructor(session) {
@@ -9,342 +13,316 @@ class MessageManager {
     this.socket = session.socket;
     this.sessionId = session.sessionId;
     this.db = session.db;
-    this.username = session.username;
+    this.mediaFolder = session.mediaFolder;
   }
 
-  // ────────────────────────────────────────────────
-  // Send Message (text, media, location, etc.)
-  // ────────────────────────────────────────────────
-  async send(chatId, text = '', options = {}) {
+  /**
+   * Send message using Baileys-native argument style
+   *
+   * @param {string} to - Phone number, group ID or full JID
+   * @param {import('@whiskeysockets/baileys').AnyMessageContent} content - Baileys message content object
+   * @param {import('@whiskeysockets/baileys').MiscMessageParams & {
+   *   typingTime?: number,
+   *   autoSaveMedia?: boolean
+   * }} [options={}] - Baileys options + custom flags
+   * @returns {Promise<{ success: boolean, message: string, data?: any, error?: string }>}
+   */
+  async sendMessage(to, content, options = {}) {
     try {
       if (!this.socket || this.session.connectionStatus !== 'connected') {
-        return { success: false, message: 'Session not connected' };
+        return { success: false, message: 'Session is not connected' };
       }
 
-      const jid = this.session.normalizeJid(chatId);
-      if (!jid) return { success: false, message: 'Invalid chatId' };
-
-      const {
-        attachment = null,
-        latitude,
-        longitude,
-        typingTime = 0,
-        replyTo = null,
-        ptt = false,
-        mimetype,
-        filename,
-        ...extraOptions
-      } = options;
-
-      // Simulate typing/recording if requested
-      if (typingTime > 0) {
-        let presence = 'composing';
-        if (attachment && ptt && /\.(ogg|opus)$/i.test(attachment)) {
-          presence = 'recording';
-        }
-        await this.socket.sendPresenceUpdate(presence, jid);
-        await new Promise(r => setTimeout(r, typingTime));
-        await this.socket.sendPresenceUpdate('paused', jid);
+      if (!to) {
+        return { success: false, message: 'Destination (to) is required' };
       }
 
-      // Quoted message support
-      let quoted;
-      if (replyTo) {
-        quoted = {
-          key: { remoteJid: jid, id: replyTo, fromMe: false },
-          message: { conversation: '' }
-        };
+      if (!content || Object.keys(content).length === 0) {
+        return { success: false, message: 'Content object cannot be empty' };
       }
-      const messageOptions = quoted ? { quoted } : {};
 
-      let content = {};
-      let type = 'text';
-
-      if (attachment && typeof attachment === 'string') {
-        const url = attachment.toLowerCase();
-        const ext = (url.split('.').pop() || '').split('?')[0].toLowerCase();
-
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-          type = 'image';
-          content = { image: { url: attachment }, caption: text || undefined };
-        } else if (['mp4', '3gp'].includes(ext)) {
-          type = 'video';
-          content = { video: { url: attachment }, caption: text || undefined };
-        } else if (['ogg', 'opus'].includes(ext)) {
-          type = 'audio';
-          content = {
-            audio: { url: attachment },
-            ptt,
-            mimetype: mimetype || 'audio/ogg; codecs=opus'
-          };
-        } else if (ext === 'vcf' || ext === 'vcard') {
-          type = 'contact';
-          content = {
-            contacts: {
-              displayName: text || 'Contact',
-              contacts: [{ vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${text || 'Contact'}\nTEL;waid=${text}:${text}\nEND:VCARD` }]
-            }
-          };
-        } else {
-          type = 'document';
-          content = {
-            document: { url: attachment },
-            fileName: filename || `file.${ext || 'bin'}`,
-            mimetype: mimetype || 'application/octet-stream',
-            caption: text || undefined
-          };
-        }
-      } else if (latitude && longitude) {
-        type = 'location';
-        content = {
-          location: {
-            degreesLatitude: Number(latitude),
-            degreesLongitude: Number(longitude),
-            name: text || ''
-          }
-        };
-      } else if (text) {
-        content = { text };
+      // ─── Destination validation & normalization ───
+      let jid;
+      const jidCheck = Utilities.validateJid(to);
+      if (jidCheck.valid) {
+        jid = to;
       } else {
-        return { success: false, message: 'Provide text, attachment, location or other content' };
+        const phoneCheck = Utilities.normalizePhoneNumber(to);
+        if (!phoneCheck.valid) {
+          return { success: false, message: phoneCheck.error };
+        }
+        jid = phoneCheck.normalized + '@s.whatsapp.net';
       }
 
-      const result = await this.socket.sendMessage(jid, content, { ...messageOptions, ...extraOptions });
-
-      const sent = {
-        messageId: result?.key?.id,
-        chatId: jid,
-        timestamp: new Date().toISOString(),
-        fromMe: true,
-        type,
-        text: text || undefined,
-        attachment: attachment || undefined
-      };
-
-      wsManager.emitMessageSent(this.sessionId, sent);
-      await this.session.webhook.send('message.sent', sent);
-
-      return {
-        success: true,
-        message: `${type.charAt(0).toUpperCase() + type.slice(1)} sent`,
-        data: sent
-      };
-    } catch (error) {
-      console.error(`[${this.sessionId}] send failed: ${error.message}`);
-      return { success: false, message: error.message || 'Failed to send message' };
-    }
-  }
-
-  // ────────────────────────────────────────────────
-  // Mark Chat as Read
-  // ────────────────────────────────────────────────
-  async markChatRead(chatId, messageId = null, updateDbOnly = false) {
-    try {
-      if (!this.socket || this.session.connectionStatus !== 'connected') {
-        return { success: false, message: 'Session not connected' };
-      }
-
-      const jid = this.session.normalizeJid(chatId);
-      if (!jid) return { success: false, message: 'Invalid chatId' };
-
-      const isGroup = jid.endsWith('@g.us');
-
-      let query = `
-        SELECT message_id, key_participant
-        FROM messages
-        WHERE session_id = ?
-          AND chat_id = ?
-          AND fromMe = 0
-          AND status != 'read'
-      `;
-      const params = [this.sessionId, jid];
-
-      if (messageId) {
-        query += ` AND message_id <= ?`;
-        params.push(messageId);
-      }
-
-      query += ` ORDER BY timestamp ASC LIMIT 500`;
-
-      const unreadRows = await this.db.mysqlQuery(query, params);
-
-      if (unreadRows.length === 0) {
-        await this._forceUpdateUnreadCount(jid);
-        return {
-          success: true,
-          message: 'No unread messages found',
-          data: { chatId: jid, markedCount: 0 }
-        };
-      }
-
-      let markedCount = 0;
-
-      if (!updateDbOnly) {
-        const keys = unreadRows.map(row => {
-          const key = { remoteJid: jid, id: row.message_id };
-          if (isGroup && row.key_participant) key.participant = row.key_participant;
-          return key;
-        });
-
-        if (keys.length > 0) {
-          await this.socket.readMessages(keys);
-          markedCount = keys.length;
+      // ─── Media URL validation (if present) ───
+      const mediaFields = ['image', 'video', 'audio', 'document', 'sticker'];
+      for (const field of mediaFields) {
+        if (content[field]?.url && !Utilities.isValidHttpUrl(content[field].url)) {
+          return { success: false, message: `Invalid URL in ${field} field` };
         }
       }
 
-      let updateQuery = `
-        UPDATE messages
-        SET status = 'read',
-            status_timestamp = NOW()
-        WHERE session_id = ?
-          AND chat_id = ?
-          AND fromMe = 0
-          AND status != 'read'
-      `;
-      const updateParams = [this.sessionId, jid];
+      // ─── Typing simulation (with reasonable limit) ───
+      const { typingTime = 0, autoSaveMedia = true, ...baileysOptions } = options;
 
-      if (messageId) {
-        updateQuery += ` AND message_id <= ?`;
-        updateParams.push(messageId);
+      if (typingTime > 0 && typingTime <= 8000) { // prevent abuse
+        const isVoice = !!content.audio?.ptt;
+        const presence = isVoice ? 'recording' : 'composing';
+
+        await this.socket.sendPresenceUpdate(presence, jid).catch(console.warn);
+        await Utilities.sleep(typingTime);
+        await this.socket.sendPresenceUpdate('paused', jid).catch(console.warn);
       }
 
-      const [result] = await this.db.mysqlQuery(updateQuery, updateParams);
-      const updatedRows = result?.affectedRows || 0;
+      // ─── Send the message ───
+      const sent = await this.socket.sendMessage(jid, content, baileysOptions);
 
-      await this._forceUpdateUnreadCount(jid);
+      const messageId = sent?.key?.id;
+      const sentAt = new Date().toISOString();
 
-      return {
+      const result = {
         success: true,
-        message: 'Chat marked as read',
+        message: 'Message sent successfully',
         data: {
+          messageId,
           chatId: jid,
-          isGroup,
-          requestedUpTo: messageId || 'all',
-          markedCount,
-          dbUpdatedCount: updatedRows
+          timestamp: sentAt,
+          fromMe: true,
+          preview: this.formatLastMessagePreview(sent)
         }
       };
+
+      // ─── Emit real-time events ───
+      this.session.wsManager?.emitMessageSent(this.sessionId, result.data);
+      this.session.webhook?._sendWebhook('message.sent', result.data);
+
+      return result;
     } catch (err) {
-      console.error(`[${this.sessionId}] markChatRead failed: ${err.message}`);
-      return { success: false, message: err.message || 'Failed to mark as read' };
+      console.error(`[${this.sessionId}] sendMessage failed:`, err.stack || err.message);
+      return {
+        success: false,
+        message: 'Failed to send message',
+        error: err.message || 'Unknown error'
+      };
     }
   }
 
-  async _forceUpdateUnreadCount(jid) {
-    try {
-      const [rows] = await this.db.mysqlQuery(`
-        SELECT COUNT(*) as unread
-        FROM messages
-        WHERE session_id = ?
-          AND chat_id = ?
-          AND fromMe = 0
-          AND status != 'read'
-      `, [this.sessionId, jid]);
-
-      const unreadCount = rows[0]?.unread || 0;
-
-      await this.db.mysqlQuery(`
-        UPDATE chats_overview
-        SET unread_count = ?
-        WHERE session_id = ? AND chat_id = ?
-      `, [unreadCount, this.sessionId, jid]);
-    } catch (err) {
-      console.warn(`[${this.sessionId}] Failed to force update unread_count: ${err.message}`);
-    }
-  }
-
-  // ────────────────────────────────────────────────
-  // Media Auto-Save (called from messages.upsert)
-  // ────────────────────────────────────────────────
+  /**
+   * Automatically download and save media from incoming messages
+   * @param {import('@whiskeysockets/baileys').proto.IWebMessageInfo} message
+   * @returns {Promise<string|null>} public media path or null
+   * @private
+   */
   async _autoSaveMedia(message) {
     try {
-      if (!message.message) return null;
+      if (!message?.message) return null;
 
       const contentType = getContentType(message.message);
-      const mediaTypes = ['imageMessage', 'audioMessage', 'documentMessage', 'stickerMessage', 'videoMessage'];
+      const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'];
 
       if (!contentType || !mediaTypes.includes(contentType)) return null;
 
-      const mediaContent = message.message[contentType];
-      if (!mediaContent) return null;
+      const media = message.message[contentType];
+      if (!media) return null;
 
       const buffer = await downloadMediaMessage(
         message,
         'buffer',
         {},
-        { logger: console, reuploadRequest: this.socket?.updateMediaMessage }
+        {
+          logger: console,
+          reuploadRequest: this.socket?.updateMediaMessage
+        }
       );
 
-      const chatId = message.key.remoteJid.replace(/[@s.whatsapp.net|g.us]/g, '');
-      const mediaDir = path.join(this.session.mediaFolder, chatId);
+      const chatIdClean = message.key.remoteJid.replace(/[@s.whatsapp.net|g.us]/g, '');
+      const mime = media.mimetype || Utilities.guessMimeType(contentType);
+      const ext = Utilities.guessExtension(mime);
+      const fname = media.fileName || `${message.key.id}.${ext}`;
 
-      if (!fs.existsSync(mediaDir)) {
-        fs.mkdirSync(mediaDir, { recursive: true });
-      }
+      const publicPath = Utilities.saveMediaToDisk(
+        buffer,
+        this.sessionId,
+        chatIdClean,
+        fname,
+        this.mediaFolder
+      );
 
-      const mimetype = mediaContent.mimetype || this._getMimetype(contentType);
-      const ext = this._getExtFromMimetype(mimetype);
-      const filename = mediaContent.fileName || `${message.key.id}.${ext}`;
-      const filePath = path.join(mediaDir, filename);
-
-      fs.writeFileSync(filePath, buffer);
-
-      const relativePath = `/media/${this.sessionId}/${chatId}/${filename}`;
-
+      // Save to database (if method exists)
       if (this.db?._upsertMediaFile) {
         await this.db._upsertMediaFile({
           messageId: message.key.id,
           chatId: message.key.remoteJid,
-          filePath: relativePath,
-          mimetype,
-          fileLength: mediaContent.fileLength,
-          timestamp: message.messageTimestamp
+          filePath: publicPath,
+          mimetype: mime,
+          fileLength: media.fileLength,
+          timestamp: Utilities.formatTimestamp(message.messageTimestamp)
         });
       }
 
-      return relativePath;
-    } catch (error) {
-      console.error(`[${this.sessionId}] _autoSaveMedia failed: ${error.message}`);
+      // Attach to message object for convenience
+      message._mediaPath = publicPath;
+
+      return publicPath;
+    } catch (err) {
+      console.error(`[${this.sessionId}] _autoSaveMedia failed:`, err.message);
       return null;
     }
   }
 
-  _getMimetype(contentType) {
-    const map = {
-      imageMessage: 'image/jpeg',
-      videoMessage: 'video/mp4',
-      audioMessage: 'audio/ogg; codecs=opus',
-      documentMessage: 'application/octet-stream',
-      stickerMessage: 'image/webp'
+  /**
+   * Format full message for API responses / frontend
+   * @param {import('@whiskeysockets/baileys').proto.IWebMessageInfo} msg
+   * @returns {object|null}
+   */
+  formatMessage(msg) {
+    if (!msg || !msg.message) return null;
+
+    const m = msg.message;
+    let type = 'unknown';
+    let content = null;
+    let caption, mimetype, filename;
+
+    if (m.conversation) {
+      type = 'text';
+      content = m.conversation;
+    } else if (m.extendedTextMessage) {
+      type = 'text';
+      content = m.extendedTextMessage.text;
+    } else if (m.imageMessage) {
+      type = 'image';
+      caption = m.imageMessage.caption;
+      mimetype = m.imageMessage.mimetype;
+    } else if (m.videoMessage) {
+      type = 'video';
+      caption = m.videoMessage.caption;
+      mimetype = m.videoMessage.mimetype;
+    } else if (m.audioMessage) {
+      type = m.audioMessage.ptt ? 'ptt' : 'audio';
+      mimetype = m.audioMessage.mimetype;
+    } else if (m.documentMessage) {
+      type = 'document';
+      filename = m.documentMessage.fileName;
+      mimetype = m.documentMessage.mimetype;
+    } else if (m.stickerMessage) {
+      type = 'sticker';
+      mimetype = m.stickerMessage.mimetype;
+    } else if (m.locationMessage) {
+      type = 'location';
+      content = {
+        latitude: m.locationMessage.degreesLatitude,
+        longitude: m.locationMessage.degreesLongitude,
+        name: m.locationMessage.name,
+        address: m.locationMessage.address
+      };
+    } else if (m.contactMessage) {
+      type = 'contact';
+      content = {
+        displayName: m.contactMessage.displayName,
+        vcard: m.contactMessage.vcard
+      };
+    } else if (m.contactsArrayMessage) {
+      type = 'contacts';
+      content = m.contactsArrayMessage.contacts?.map(c => ({
+        displayName: c.displayName,
+        vcard: c.vcard
+      }));
+    } else if (m.reactionMessage) {
+      type = 'reaction';
+      content = {
+        emoji: m.reactionMessage.text,
+        targetMessageId: m.reactionMessage.key?.id
+      };
+    }
+
+    return {
+      id: msg.key.id,
+      chatId: msg.key.remoteJid,
+      fromMe: msg.key.fromMe || false,
+      sender: msg.key.participant || msg.key.remoteJid,
+      senderPhone: (msg.key.participant || msg.key.remoteJid)?.split('@')[0],
+      senderName: msg.pushName || null,
+      timestamp: Utilities.formatTimestamp(msg.messageTimestamp),
+      type,
+      content,
+      caption,
+      mimetype,
+      filename,
+      mediaUrl: msg._mediaPath || null,
+      isGroup: Utilities.isGroupJid(msg.key.remoteJid),
+      quotedMessage: m.extendedTextMessage?.contextInfo?.quotedMessage
+        ? {
+            id: m.extendedTextMessage.contextInfo.stanzaId,
+            sender: m.extendedTextMessage.contextInfo.participant
+          }
+        : null
     };
-    return map[contentType] || 'application/octet-stream';
   }
 
-  _getExtFromMimetype(mimetype) {
-    const map = {
-      'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
-      'video/mp4': 'mp4', 'video/3gpp': '3gp',
-      'audio/ogg': 'ogg', 'audio/ogg; codecs=opus': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a',
-      'application/pdf': 'pdf'
+  /**
+   * Format short preview for chat list (last message)
+   * @param {import('@whiskeysockets/baileys').proto.IWebMessageInfo} msg
+   * @returns {object|null}
+   */
+  formatLastMessagePreview(msg) {
+    if (!msg || !msg.message) return null;
+
+    const m = msg.message;
+    let type = 'unknown';
+    let text = null;
+
+    if (m.conversation) {
+      type = 'text'; text = m.conversation;
+    } else if (m.extendedTextMessage?.text) {
+      type = 'text'; text = m.extendedTextMessage.text;
+    } else if (m.imageMessage) {
+      type = 'image'; text = m.imageMessage.caption || '🖼️ Photo';
+    } else if (m.videoMessage) {
+      type = 'video'; text = m.videoMessage.caption || '🎥 Video';
+    } else if (m.audioMessage) {
+      type = m.audioMessage.ptt ? 'voice' : 'audio';
+      text = m.audioMessage.ptt ? '🎤 Voice' : '🎵 Audio';
+    } else if (m.documentMessage) {
+      type = 'document'; text = `📄 ${m.documentMessage.fileName || 'File'}`;
+    } else if (m.stickerMessage) {
+      type = 'sticker'; text = 'Sticker';
+    } else if (m.locationMessage) {
+      type = 'location'; text = '📍 Location';
+    } else if (m.contactMessage) {
+      type = 'contact'; text = `👤 ${m.contactMessage.displayName || 'Contact'}`;
+    } else if (m.reactionMessage) {
+      type = 'reaction'; text = m.reactionMessage.text || 'Reaction';
+    }
+
+    return {
+      type,
+      text: text ? (text.length > 120 ? text.slice(0, 117) + '...' : text) : null,
+      fromMe: msg.key?.fromMe || false,
+      timestamp: Utilities.formatTimestamp(msg.messageTimestamp)
     };
-    return map[mimetype] || mimetype.split('/')[1]?.split(';')[0] || 'bin';
   }
 
-  // ────────────────────────────────────────────────
-  // Retrieve Messages
-  // ────────────────────────────────────────────────
+  /**
+   * Retrieve messages from database (paginated)
+   * @param {string} chatId
+   * @param {number} [limit=50]
+   * @param {string|null} [cursor=null]
+   * @returns {Promise<{ success: boolean, data?: any, message?: string }>}
+   */
   async getMessages(chatId, limit = 50, cursor = null) {
     try {
-      const jid = this.session.normalizeJid(chatId);
-      if (!jid) return { success: false, message: 'Invalid chatId' };
+      const jid = Utilities.toJid(chatId);
+      if (!jid) {
+        return { success: false, message: 'Invalid chat ID' };
+      }
 
-      const isGroup = jid.endsWith('@g.us');
+      const isGroup = Utilities.isGroupJid(jid);
 
-      const messages = await this.db.getMessages?.(jid, limit, cursor) || [];
+      const rows = await this.db.getMessages?.(jid, limit, cursor) || [];
 
-      const formatted = messages
-        .filter(msg => msg && msg.key)
-        .map(msg => MessageFormatter.formatMessage(msg))
+      const formatted = rows
+        .filter(m => m && m.key)
+        .map(m => this.formatMessage(m))
         .filter(Boolean);
 
       return {
@@ -354,19 +332,19 @@ class MessageManager {
           isGroup,
           total: formatted.length,
           limit,
-          cursor: formatted.length > 0 ? formatted[formatted.length - 1].id : null,
+          cursor: formatted.length > 0 ? formatted.at(-1)?.id : null,
           hasMore: formatted.length === limit,
           messages: formatted
         }
       };
-    } catch (error) {
-      console.error(`[${this.sessionId}] getMessages failed: ${error.message}`);
-      return { success: false, message: error.message };
+    } catch (err) {
+      console.error(`[${this.sessionId}] getMessages failed:`, err);
+      return { success: false, message: err.message || 'Failed to retrieve messages' };
     }
   }
 
-  // Alias for backward compatibility / convenience
-  async fetchMessages(chatId, limit = 50, cursor = null) {
+  // Alias for convenience
+  fetchMessages(chatId, limit = 50, cursor = null) {
     return this.getMessages(chatId, limit, cursor);
   }
 }

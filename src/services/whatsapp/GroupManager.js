@@ -1,5 +1,7 @@
 // src/services/whatsapp/GroupManager.js
 
+const Utilities = require('./Utilities');
+
 class GroupManager {
   constructor(session) {
     this.session = session;
@@ -9,108 +11,35 @@ class GroupManager {
     this.username = session.username;
   }
 
-  // ────────────────────────────────────────────────
-  // Cached group fetch (shared across methods)
-  // ────────────────────────────────────────────────
-  async _getCachedGroups(forceRefresh = false) {
-    const now = Date.now();
-
-    // Return from cache if valid and not forcing refresh
-    if (
-      !forceRefresh &&
-      this.session._groupCache &&
-      this.session._groupCache.expires > now
-    ) {
-      return this.session._groupCache.data;
-    }
-
-    // Safety check: socket must exist and have the required method
-    if (!this.socket || typeof this.socket.groupFetchAllParticipating !== 'function') {
-      console.warn(
-        `[${this.sessionId}] Socket not ready or groupFetchAllParticipating unavailable — returning empty groups`
-      );
-      return {};
-    }
-
-    try {
-      const data = await this.socket.groupFetchAllParticipating().catch((err) => {
-        console.warn(`[${this.sessionId}] groupFetchAllParticipating failed: ${err.message}`);
-        return {};
-      });
-
-      // Update cache
-      this.session._groupCache = {
-        data,
-        expires: now + this.session._groupCacheTTL,
-      };
-
-      return data;
-    } catch (err) {
-      console.error(`[${this.sessionId}] Unexpected error in _getCachedGroups: ${err.message}`);
-      return {};
-    }
-  }
-
-  // ────────────────────────────────────────────────
-  // Sync group-related data (called from session initial sync)
-  // ────────────────────────────────────────────────
-  async _syncGroupRelatedData() {
-    try {
-      // Extra safety: skip entirely if socket is missing
-      if (!this.socket) {
-        console.warn(`[${this.sessionId}] Socket missing — skipping group sync`);
-        return;
-      }
-
-      const groups = await this._getCachedGroups();
-
-      for (const group of Object.values(groups)) {
-        const jid = group.id;
-
-        // 1. Store basic chat metadata
-        if (this.db?.storeChat) {
-          await this.db.storeChat(this.sessionId, this.username, jid, group);
-        }
-
-        // 2. Store chat overview / list preview
-        await this.db.storeChatOverview(this.sessionId, this.username, {
-          chat_id: jid,
-          last_message_timestamp: group.lastMessageTimestamp || Math.floor(Date.now() / 1000),
-          unread_count: group.unreadCount || 0,
-          is_pinned: !!group.pin,
-          is_archived: !!group.archive,
-          is_muted: !!group.mute,
-          mute_end: group.muteExpiration || null,
-          labels: group.labels || [],
-        });
-
-        // 3. Store full group metadata
-        await this.db.storeGroupMetadata(this.sessionId, this.username, jid, group);
-      }
-
-      console.log(
-        `[${this.sessionId}] Synced ${Object.keys(groups).length} groups (chat + overview + metadata)`
-      );
-    } catch (err) {
-      console.warn(`[${this.sessionId}] Group sync failed: ${err.message}`);
-    }
-  }
-
-  // ────────────────────────────────────────────────
-  // Group Creation
-  // ────────────────────────────────────────────────
+  /**
+   * Create a new WhatsApp group
+   * @param {string} name - Group subject (3–100 chars recommended)
+   * @param {string[]} participants - Array of phone numbers or JIDs
+   * @returns {Promise<{ success: boolean, message: string, data?: any, error?: string }>}
+   */
   async createGroup(name, participants) {
     try {
       if (!this.socket || this.session.connectionStatus !== 'connected') {
         return { success: false, message: 'Session not connected' };
       }
 
-      if (!name || !Array.isArray(participants) || participants.length === 0) {
-        return { success: false, message: 'Group name and at least one participant required' };
+      // Validate group name
+      const nameCheck = Utilities.validateGroupName(name);
+      if (!nameCheck.valid) {
+        return { success: false, message: nameCheck.error };
       }
 
-      const participantJids = participants.map((p) => this.session.normalizeJid(p));
-      const group = await this.socket.groupCreate(name, participantJids);
+      // Validate participants
+      const listCheck = Utilities.validatePhoneList(participants);
+      if (!listCheck.valid) {
+        return { success: false, message: listCheck.error };
+      }
+
+      if (listCheck.normalized.length === 0) {
+        return { success: false, message: 'At least one valid participant required' };
+      }
+
+      const group = await this.socket.groupCreate(name, listCheck.normalized);
 
       return {
         success: true,
@@ -118,192 +47,75 @@ class GroupManager {
         data: {
           groupId: group.id,
           subject: name,
-          participants: participantJids,
-          createdAt: new Date().toISOString(),
-        },
+          participants: listCheck.normalized,
+          creationTime: new Date().toISOString()
+        }
       };
-    } catch (error) {
-      console.error(`[${this.sessionId}] createGroup failed: ${error.message}`);
-      return { success: false, message: error.message };
+    } catch (err) {
+      console.error(`[${this.sessionId}] createGroup failed:`, err.message);
+      return { success: false, message: 'Failed to create group', error: err.message };
     }
   }
 
-  // ────────────────────────────────────────────────
-  // Participant Management
-  // ────────────────────────────────────────────────
-  async addParticipants(groupId, participants) {
+  /**
+   * Get all groups where this account is a participant
+   * @returns {Promise<{ success: boolean, message: string, data?: any }>}
+   */
+  async getAllGroups() {
     try {
       if (!this.socket || this.session.connectionStatus !== 'connected') {
         return { success: false, message: 'Session not connected' };
       }
 
-      const gid = this.session.normalizeJid(groupId, true);
-      const participantJids = participants.map((p) => this.session.normalizeJid(p));
+      const groups = await this.socket.groupFetchAllParticipating();
 
-      await this.socket.groupParticipantsUpdate(gid, participantJids, 'add');
-
-      return { success: true, message: 'Participants added' };
-    } catch (error) {
-      console.error(`[${this.sessionId}] addParticipants failed: ${error.message}`);
-      return { success: false, message: error.message };
-    }
-  }
-
-  async removeParticipants(groupId, participants) {
-    try {
-      if (!this.socket || this.session.connectionStatus !== 'connected') {
-        return { success: false, message: 'Session not connected' };
-      }
-
-      const gid = this.session.normalizeJid(groupId, true);
-      const participantJids = participants.map((p) => this.session.normalizeJid(p));
-
-      await this.socket.groupParticipantsUpdate(gid, participantJids, 'remove');
-
-      return { success: true, message: 'Participants removed' };
-    } catch (error) {
-      console.error(`[${this.sessionId}] removeParticipants failed: ${error.message}`);
-      return { success: false, message: error.message };
-    }
-  }
-
-  async promoteParticipants(groupId, participants) {
-    try {
-      if (!this.socket || this.session.connectionStatus !== 'connected') {
-        return { success: false, message: 'Session not connected' };
-      }
-
-      const gid = this.session.normalizeJid(groupId, true);
-      const participantJids = participants.map((p) => this.session.normalizeJid(p));
-
-      await this.socket.groupParticipantsUpdate(gid, participantJids, 'promote');
-
-      return { success: true, message: 'Participants promoted to admin' };
-    } catch (error) {
-      console.error(`[${this.sessionId}] promoteParticipants failed: ${error.message}`);
-      return { success: false, message: error.message };
-    }
-  }
-
-  async demoteParticipants(groupId, participants) {
-    try {
-      if (!this.socket || this.session.connectionStatus !== 'connected') {
-        return { success: false, message: 'Session not connected' };
-      }
-
-      const gid = this.session.normalizeJid(groupId, true);
-      const participantJids = participants.map((p) => this.session.normalizeJid(p));
-
-      await this.socket.groupParticipantsUpdate(gid, participantJids, 'demote');
-
-      return { success: true, message: 'Participants demoted' };
-    } catch (error) {
-      console.error(`[${this.sessionId}] demoteParticipants failed: ${error.message}`);
-      return { success: false, message: error.message };
-    }
-  }
-
-  // ────────────────────────────────────────────────
-  // Invite Link Management
-  // ────────────────────────────────────────────────
-  async joinByInvite(inviteCode) {
-    try {
-      const code = inviteCode.replace(/^https?:\/\/chat\.whatsapp\.com\//, '');
-      const groupId = await this.socket.groupAcceptInvite(code);
-
-      return {
-        success: true,
-        message: 'Joined group successfully',
-        data: { groupId, inviteCode: code },
-      };
-    } catch (error) {
-      console.error(`[${this.sessionId}] joinByInvite failed: ${error.message}`);
-      return { success: false, message: error.message };
-    }
-  }
-
-  async getInviteCode(groupId) {
-    try {
-      const gid = this.session.normalizeJid(groupId, true);
-      const code = await this.socket.groupInviteCode(gid);
-
-      return {
-        success: true,
-        message: 'Invite code retrieved',
-        data: {
-          groupId: gid,
-          inviteCode: code,
-          inviteLink: `https://chat.whatsapp.com/${code}`,
-        },
-      };
-    } catch (error) {
-      console.error(`[${this.sessionId}] getInviteCode failed: ${error.message}`);
-      return { success: false, message: error.message };
-    }
-  }
-
-  async revokeInvite(groupId) {
-    try {
-      const gid = this.session.normalizeJid(groupId, true);
-      const newCode = await this.socket.groupRevokeInvite(gid);
-
-      return {
-        success: true,
-        message: 'Invite code revoked and new one generated',
-        data: {
-          groupId: gid,
-          newInviteCode: newCode,
-          newInviteLink: `https://chat.whatsapp.com/${newCode}`,
-        },
-      };
-    } catch (error) {
-      console.error(`[${this.sessionId}] revokeInvite failed: ${error.message}`);
-      return { success: false, message: error.message };
-    }
-  }
-
-  // ────────────────────────────────────────────────
-  // Group Info Retrieval
-  // ────────────────────────────────────────────────
-  async getAllGroups(refresh = false) {
-    try {
-      const groups = await this._getCachedGroups(refresh);
-      const list = Object.values(groups).map((g) => ({
+      const formatted = Object.values(groups).map(g => ({
         id: g.id,
-        subject: g.subject,
-        subjectOwner: g.subjectOwner,
-        subjectTime: g.subjectTime,
-        desc: g.desc,
-        descId: g.descId,
-        restrict: g.restrict,
-        announce: g.announce,
-        isViewOnce: g.isViewOnce,
-        size: g.size,
-        participantsCount: g.participants?.length || 0,
-        creation: g.creation,
-        owner: g.owner,
+        subject: g.subject || null,
+        subjectOwner: g.subjectOwner || null,
+        subjectTime: g.subjectTime ? new Date(g.subjectTime * 1000).toISOString() : null,
+        desc: g.desc || null,
+        size: g.size || 0,
+        creation: g.creation ? new Date(g.creation * 1000).toISOString() : null,
+        owner: g.owner || null,
+        participantsCount: g.participants?.length || 0
       }));
 
       return {
         success: true,
         message: 'Groups retrieved',
-        data: { count: list.length, groups: list },
+        data: {
+          count: formatted.length,
+          groups: formatted
+        }
       };
-    } catch (error) {
-      console.error(`[${this.sessionId}] getAllGroups failed: ${error.message}`);
-      return { success: false, message: error.message };
+    } catch (err) {
+      console.error(`[${this.sessionId}] getAllGroups failed:`, err.message);
+      return { success: false, message: 'Failed to fetch groups', error: err.message };
     }
   }
 
-  async getMetadata(groupId) {
+  /**
+   * Get detailed metadata for a specific group
+   * @param {string} groupId - Group JID or short ID
+   * @returns {Promise<{ success: boolean, message: string, data?: any }>}
+   */
+  async getGroupMetadata(groupId) {
     try {
-      const gid = this.session.normalizeJid(groupId, true);
-
-      if (!this.socket || typeof this.socket.groupMetadata !== 'function') {
-        return { success: false, message: 'Socket not ready for group metadata' };
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
       }
 
-      const metadata = await this.socket.groupMetadata(gid);
+      const jidCheck = Utilities.validateJid(groupId);
+      if (!jidCheck.valid && !Utilities.isGroupJid(groupId)) {
+        const normalized = Utilities.toJid(groupId, true);
+        if (!normalized) {
+          return { success: false, message: 'Invalid group ID' };
+        }
+        groupId = normalized;
+      }
+
+      const metadata = await this.socket.groupMetadata(groupId);
 
       return {
         success: true,
@@ -312,108 +124,430 @@ class GroupManager {
           id: metadata.id,
           subject: metadata.subject,
           subjectOwner: metadata.subjectOwner,
-          subjectTime: metadata.subjectTime,
+          subjectTime: metadata.subjectTime ? new Date(metadata.subjectTime * 1000).toISOString() : null,
           desc: metadata.desc,
           descId: metadata.descId,
           restrict: metadata.restrict,
           announce: metadata.announce,
-          isViewOnce: metadata.isViewOnce,
           size: metadata.size,
-          participants: metadata.participants?.map((p) => ({
+          creation: metadata.creation ? new Date(metadata.creation * 1000).toISOString() : null,
+          owner: metadata.owner,
+          participants: metadata.participants?.map(p => ({
             id: p.id,
             admin: p.admin || null,
-            isSuperAdmin: p.admin === 'superadmin',
-          })),
-          creation: metadata.creation,
-          owner: metadata.owner,
-        },
+            isSuperAdmin: p.admin === 'superadmin'
+          })) || []
+        }
       };
-    } catch (error) {
-      console.error(`[${this.sessionId}] getMetadata failed: ${error.message}`);
-      return { success: false, message: error.message };
+    } catch (err) {
+      console.error(`[${this.sessionId}] getGroupMetadata failed:`, err.message);
+      return { success: false, message: 'Failed to get group metadata', error: err.message };
     }
   }
 
-  // ────────────────────────────────────────────────
-  // Group Settings
-  // ────────────────────────────────────────────────
-  async updateSettings(groupId, settings) {
+  /**
+   * Add participants to a group
+   * @param {string} groupId
+   * @param {string[]} participants - phones or JIDs
+   */
+  async addParticipants(groupId, participants) {
     try {
       if (!this.socket || this.session.connectionStatus !== 'connected') {
         return { success: false, message: 'Session not connected' };
       }
 
-      const gid = this.session.normalizeJid(groupId, true);
-
-      // Example settings: { announce: true, restrict: false, slowmode: 3600 }
-      const promises = [];
-
-      if ('announce' in settings) {
-        promises.push(
-          this.socket.groupSettingUpdate(gid, settings.announce ? 'announcement' : 'not_announcement')
-        );
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
       }
 
-      if ('restrict' in settings) {
-        promises.push(
-          this.socket.groupSettingUpdate(gid, settings.restrict ? 'locked' : 'unlocked')
-        );
+      const listCheck = Utilities.validatePhoneList(participants);
+      if (!listCheck.valid) {
+        return { success: false, message: listCheck.error };
       }
 
-      await Promise.all(promises);
+      const result = await this.socket.groupParticipantsUpdate(
+        jid,
+        listCheck.normalized,
+        'add'
+      );
 
-      return { success: true, message: 'Group settings updated' };
-    } catch (error) {
-      console.error(`[${this.sessionId}] updateSettings failed: ${error.message}`);
-      return { success: false, message: error.message };
+      return {
+        success: true,
+        message: 'Participants added',
+        data: { groupId: jid, results: result }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] addParticipants failed:`, err.message);
+      return { success: false, message: 'Failed to add participants', error: err.message };
     }
   }
 
-  async updateSubject(groupId, newSubject) {
+  /**
+   * Remove participants from a group
+   * @param {string} groupId
+   * @param {string[]} participants
+   */
+  async removeParticipants(groupId, participants) {
     try {
       if (!this.socket || this.session.connectionStatus !== 'connected') {
         return { success: false, message: 'Session not connected' };
       }
 
-      const gid = this.session.normalizeJid(groupId, true);
-      await this.socket.groupUpdateSubject(gid, newSubject);
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
 
-      return { success: true, message: 'Group subject updated' };
-    } catch (error) {
-      console.error(`[${this.sessionId}] updateSubject failed: ${error.message}`);
-      return { success: false, message: error.message };
+      const listCheck = Utilities.validatePhoneList(participants);
+      if (!listCheck.valid) {
+        return { success: false, message: listCheck.error };
+      }
+
+      const result = await this.socket.groupParticipantsUpdate(
+        jid,
+        listCheck.normalized,
+        'remove'
+      );
+
+      return {
+        success: true,
+        message: 'Participants removed',
+        data: { groupId: jid, results: result }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] removeParticipants failed:`, err.message);
+      return { success: false, message: 'Failed to remove participants', error: err.message };
     }
   }
 
-  async updateDescription(groupId, newDesc) {
+  /**
+   * Promote participants to admin
+   * @param {string} groupId
+   * @param {string[]} participants
+   */
+  async promoteParticipants(groupId, participants) {
     try {
       if (!this.socket || this.session.connectionStatus !== 'connected') {
         return { success: false, message: 'Session not connected' };
       }
 
-      const gid = this.session.normalizeJid(groupId, true);
-      await this.socket.groupUpdateDescription(gid, newDesc);
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
 
-      return { success: true, message: 'Group description updated' };
-    } catch (error) {
-      console.error(`[${this.sessionId}] updateDescription failed: ${error.message}`);
-      return { success: false, message: error.message };
+      const listCheck = Utilities.validatePhoneList(participants);
+      if (!listCheck.valid) {
+        return { success: false, message: listCheck.error };
+      }
+
+      const result = await this.socket.groupParticipantsUpdate(
+        jid,
+        listCheck.normalized,
+        'promote'
+      );
+
+      return {
+        success: true,
+        message: 'Participants promoted',
+        data: { groupId: jid, results: result }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] promoteParticipants failed:`, err.message);
+      return { success: false, message: 'Failed to promote participants', error: err.message };
     }
   }
 
-  async leave(groupId) {
+  /**
+   * Demote admins to regular members
+   * @param {string} groupId
+   * @param {string[]} participants
+   */
+  async demoteParticipants(groupId, participants) {
     try {
       if (!this.socket || this.session.connectionStatus !== 'connected') {
         return { success: false, message: 'Session not connected' };
       }
 
-      const gid = this.session.normalizeJid(groupId, true);
-      await this.socket.groupLeave(gid);
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
 
-      return { success: true, message: 'Left the group' };
-    } catch (error) {
-      console.error(`[${this.sessionId}] leave failed: ${error.message}`);
-      return { success: false, message: error.message };
+      const listCheck = Utilities.validatePhoneList(participants);
+      if (!listCheck.valid) {
+        return { success: false, message: listCheck.error };
+      }
+
+      const result = await this.socket.groupParticipantsUpdate(
+        jid,
+        listCheck.normalized,
+        'demote'
+      );
+
+      return {
+        success: true,
+        message: 'Participants demoted',
+        data: { groupId: jid, results: result }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] demoteParticipants failed:`, err.message);
+      return { success: false, message: 'Failed to demote participants', error: err.message };
+    }
+  }
+
+  /**
+   * Update group subject (name)
+   * @param {string} groupId
+   * @param {string} subject
+   */
+  async updateSubject(groupId, subject) {
+    try {
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
+      }
+
+      const nameCheck = Utilities.validateGroupName(subject);
+      if (!nameCheck.valid) {
+        return { success: false, message: nameCheck.error };
+      }
+
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
+
+      await this.socket.groupUpdateSubject(jid, subject);
+
+      return {
+        success: true,
+        message: 'Group subject updated',
+        data: { groupId: jid, subject }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] updateSubject failed:`, err.message);
+      return { success: false, message: 'Failed to update subject', error: err.message };
+    }
+  }
+
+  /**
+   * Update group description
+   * @param {string} groupId
+   * @param {string} description
+   */
+  async updateDescription(groupId, description) {
+    try {
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
+      }
+
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
+
+      await this.socket.groupUpdateDescription(jid, description || '');
+
+      return {
+        success: true,
+        message: 'Group description updated',
+        data: { groupId: jid, description: description || '' }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] updateDescription failed:`, err.message);
+      return { success: false, message: 'Failed to update description', error: err.message };
+    }
+  }
+
+  /**
+   * Update group settings (announcement / locked)
+   * @param {string} groupId
+   * @param {'announcement'|'not_announcement'|'locked'|'unlocked'} setting
+   */
+  async updateSettings(groupId, setting) {
+    try {
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
+      }
+
+      const validSettings = ['announcement', 'not_announcement', 'locked', 'unlocked'];
+      if (!validSettings.includes(setting)) {
+        return { success: false, message: `Invalid setting. Allowed: ${validSettings.join(', ')}` };
+      }
+
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
+
+      await this.socket.groupSettingUpdate(jid, setting);
+
+      return {
+        success: true,
+        message: 'Group settings updated',
+        data: { groupId: jid, setting }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] updateSettings failed:`, err.message);
+      return { success: false, message: 'Failed to update settings', error: err.message };
+    }
+  }
+
+  /**
+   * Update group profile picture
+   * @param {string} groupId
+   * @param {string} imageUrl - public URL to image
+   */
+  async updateProfilePicture(groupId, imageUrl) {
+    try {
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
+      }
+
+      if (!Utilities.isValidHttpUrl(imageUrl)) {
+        return { success: false, message: 'Invalid image URL' };
+      }
+
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
+
+      await this.socket.updateProfilePicture(jid, { url: imageUrl });
+
+      return {
+        success: true,
+        message: 'Group profile picture updated',
+        data: { groupId: jid }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] updateProfilePicture failed:`, err.message);
+      return { success: false, message: 'Failed to update profile picture', error: err.message };
+    }
+  }
+
+  /**
+   * Leave a group
+   * @param {string} groupId
+   */
+  async leaveGroup(groupId) {
+    try {
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
+      }
+
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
+
+      await this.socket.groupLeave(jid);
+
+      return {
+        success: true,
+        message: 'Left group successfully',
+        data: { groupId: jid }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] leaveGroup failed:`, err.message);
+      return { success: false, message: 'Failed to leave group', error: err.message };
+    }
+  }
+
+  /**
+   * Join group via invite code/link
+   * @param {string} inviteCode - code or full chat.whatsapp.com/... link
+   */
+  async joinByInvite(inviteCode) {
+    try {
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
+      }
+
+      let code = inviteCode;
+      if (inviteCode.includes('chat.whatsapp.com/')) {
+        code = inviteCode.split('chat.whatsapp.com/')[1];
+      }
+
+      if (!code || code.length < 10) {
+        return { success: false, message: 'Invalid invite code' };
+      }
+
+      const groupId = await this.socket.groupAcceptInvite(code);
+
+      return {
+        success: true,
+        message: 'Joined group successfully',
+        data: { groupId, inviteCode: code }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] joinByInvite failed:`, err.message);
+      return { success: false, message: 'Failed to join group', error: err.message };
+    }
+  }
+
+  /**
+   * Get current invite code for a group
+   * @param {string} groupId
+   */
+  async getInviteCode(groupId) {
+    try {
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
+      }
+
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
+
+      const code = await this.socket.groupInviteCode(jid);
+
+      return {
+        success: true,
+        message: 'Invite code retrieved',
+        data: {
+          groupId: jid,
+          inviteCode: code,
+          inviteLink: `https://chat.whatsapp.com/${code}`
+        }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] getInviteCode failed:`, err.message);
+      return { success: false, message: 'Failed to get invite code', error: err.message };
+    }
+  }
+
+  /**
+   * Revoke current invite code and generate new one
+   * @param {string} groupId
+   */
+  async revokeInvite(groupId) {
+    try {
+      if (!this.socket || this.session.connectionStatus !== 'connected') {
+        return { success: false, message: 'Session not connected' };
+      }
+
+      const jid = Utilities.toJid(groupId, true);
+      if (!jid || !Utilities.isGroupJid(jid)) {
+        return { success: false, message: 'Invalid group JID' };
+      }
+
+      const newCode = await this.socket.groupRevokeInvite(jid);
+
+      return {
+        success: true,
+        message: 'Invite code revoked and new one generated',
+        data: {
+          groupId: jid,
+          newInviteCode: newCode,
+          newInviteLink: `https://chat.whatsapp.com/${newCode}`
+        }
+      };
+    } catch (err) {
+      console.error(`[${this.sessionId}] revokeInvite failed:`, err.message);
+      return { success: false, message: 'Failed to revoke invite', error: err.message };
     }
   }
 }
