@@ -45,7 +45,6 @@ class WebhookManager {
     }
 
     this.session._saveConfig();
-    return this.session.getInfo();
   }
 
   /**
@@ -64,7 +63,6 @@ class WebhookManager {
     }
 
     this.session._saveConfig();
-    return this.session.getInfo();
   }
 
   /**

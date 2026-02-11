@@ -46,8 +46,6 @@ class WhatsAppManager {
         }
         
         sessionId = sessionId || this.createSessionId(username);
-        
-        // Merge username into options
         options = { ...options, username };
         
         if (this.sessions.has(sessionId)) {
@@ -108,15 +106,22 @@ class WhatsAppManager {
         return this.sessions.get(sessionId);
     }
 
-    /**
-     * Get all sessions info
-     * @returns {Array}
-     */
-    getAllSessions() {
-        const sessionsInfo = [];
-        for (const [sessionId, session] of this.sessions) {
-            sessionsInfo.push(session.getInfo());
-        }
+    getAllSessions(username = null) {
+        const sessionsInfo = Array.from(this.sessions.values())
+            .filter(session => {
+                if (!session || typeof session.getInfo !== 'function') {
+                    console.warn(`Invalid session instance skipped`);
+                    return false;
+                }
+                return true;
+            })
+            .map(session => {
+                const info = session.getInfo();
+                return username && info.username !== username ? null : info;
+            })
+            .filter(Boolean); // remove nulls from username filter
+
+        console.log('Final sessionsInfo length:', sessionsInfo.length);
         return sessionsInfo;
     }
 

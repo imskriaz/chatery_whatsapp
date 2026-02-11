@@ -9,9 +9,7 @@ const { downloadMediaMessage, getContentType } = require("@whiskeysockets/bailey
 class DatabaseStore {
   constructor(sessionId = "global", username = null) {
     this.sessionId = sessionId.replace(/[\/\\:*?"<>|]/g, "_");
-    this.username = username; 
-
-    console.log('DatabaseStore', this.username);
+    this.username = username;
 
     this.mysqlPool = mysql.createPool({
       host: process.env.MYSQL_HOST || "127.0.0.1",

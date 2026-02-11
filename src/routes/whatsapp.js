@@ -45,16 +45,12 @@ const checkSession = (req, res, next) => {
 // ────────────────────────────────────────────────
 
 router.get('/sessions', (req, res) => {
-  try {
     const sessions = whatsappManager.getAllSessions();
     res.json({
       success: true,
       message: 'Sessions retrieved',
-      data: sessions.map(s => s.getInfo())
+      data: sessions
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
 });
 
 router.post('/sessions/connect', async (req, res) => {

@@ -55,9 +55,6 @@ class WhatsAppSession {
     this.chat    = new ChatManager(this);
   }
 
-  // ────────────────────────────────────────────────
-  // Config persistence
-  // ────────────────────────────────────────────────
   _loadConfig() {
     try {
       if (fs.existsSync(this.configFile)) {
@@ -92,9 +89,6 @@ class WhatsAppSession {
     return this.getInfo();
   }
 
-  // ────────────────────────────────────────────────
-  // Core connection logic with safe reconnection
-  // ────────────────────────────────────────────────
   async connect() {
     if (this.connectionStatus === 'connected' && this.socket) {
       return { success: true, message: 'Already connected' };
@@ -259,9 +253,6 @@ class WhatsAppSession {
     this.socket.ev.on('call', calls => wsManager.emitCall(this.sessionId, calls));
   }
 
-  // ────────────────────────────────────────────────
-  // Public methods
-  // ────────────────────────────────────────────────
   getInfo() {
     return {
       sessionId: this.sessionId,
@@ -336,9 +327,6 @@ class WhatsAppSession {
     }
   }
 
-  // ────────────────────────────────────────────────
-  // Utility methods — now using Utilities class
-  // ────────────────────────────────────────────────
   formatPhoneNumber(phone) {
     const norm = Utilities.normalizePhoneNumber(phone);
     return norm.valid ? norm.normalized + '@s.whatsapp.net' : null;
