@@ -84,284 +84,285 @@ class DatabaseStore {
     }
   }
 
-async ensureTables() {
-  if (this.sessionId !== "global") {
-    console.log(`[${this.sessionId}] Skipping global table creation (only done in global instance)`);
-    return;
-  }
+  async ensureTables() {
+    if (this.sessionId !== "global") {
+      console.log(`[${this.sessionId}] Skipping global table creation (only done in global instance)`);
+      return;
+    }
 
-  console.log(`[${this.sessionId}] Ensuring all global tables, indexes and triggers...`);
+    console.log(`[${this.sessionId}] Ensuring all global tables, indexes and triggers...`);
 
-  const createTableQueries = [
-    // 1. Users (global)
-    `CREATE TABLE IF NOT EXISTS users (
-      username VARCHAR(255) NOT NULL PRIMARY KEY,
-      password_hash VARCHAR(255) NOT NULL,
-      role ENUM('admin', 'moderator', 'user') DEFAULT 'user',
-      api_key VARCHAR(255) UNIQUE NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_api_key (api_key)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    const createTableQueries = [
+      // 1. Users (global)
+      `CREATE TABLE IF NOT EXISTS users (
+        username VARCHAR(255) NOT NULL PRIMARY KEY,
+        password_hash VARCHAR(255) NOT NULL,
+        role ENUM('admin', 'moderator', 'user') DEFAULT 'user',
+        api_key VARCHAR(255) UNIQUE NOT NULL,
+        active TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = active, 0 = deactivated',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_api_key (api_key)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 2. Call logs
-    `CREATE TABLE IF NOT EXISTS call_logs (
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      call_id VARCHAR(100) NOT NULL,
-      caller_jid VARCHAR(255) NOT NULL,
-      is_group TINYINT(1) DEFAULT 0,
-      is_video TINYINT(1) DEFAULT 0,
-      status VARCHAR(50) DEFAULT 'unknown',
-      timestamp BIGINT NOT NULL,
-      duration_seconds INT DEFAULT NULL,
-      PRIMARY KEY (session_id, call_id),
-      INDEX idx_session_timestamp (session_id, timestamp DESC)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 2. Call logs
+      `CREATE TABLE IF NOT EXISTS call_logs (
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        call_id VARCHAR(100) NOT NULL,
+        caller_jid VARCHAR(255) NOT NULL,
+        is_group TINYINT(1) DEFAULT 0,
+        is_video TINYINT(1) DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'unknown',
+        timestamp BIGINT NOT NULL,
+        duration_seconds INT DEFAULT NULL,
+        PRIMARY KEY (session_id, call_id),
+        INDEX idx_session_timestamp (session_id, timestamp DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 3. Chats
-    `CREATE TABLE IF NOT EXISTS chats (
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      id VARCHAR(255) NOT NULL,
-      name VARCHAR(255) DEFAULT NULL,
-      is_group TINYINT(1) DEFAULT 0,
-      unread_count INT DEFAULT 0,
-      last_message_timestamp BIGINT DEFAULT NULL,
-      archived TINYINT(1) DEFAULT 0,
-      pinned TINYINT(1) DEFAULT 0,
-      muted_until BIGINT DEFAULT 0,
-      PRIMARY KEY (session_id, id),
-      INDEX idx_session_timestamp (session_id, last_message_timestamp DESC),
-      INDEX idx_session_pinned (session_id, pinned DESC)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 3. Chats
+      `CREATE TABLE IF NOT EXISTS chats (
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) DEFAULT NULL,
+        is_group TINYINT(1) DEFAULT 0,
+        unread_count INT DEFAULT 0,
+        last_message_timestamp BIGINT DEFAULT NULL,
+        archived TINYINT(1) DEFAULT 0,
+        pinned TINYINT(1) DEFAULT 0,
+        muted_until BIGINT DEFAULT 0,
+        PRIMARY KEY (session_id, id),
+        INDEX idx_session_timestamp (session_id, last_message_timestamp DESC),
+        INDEX idx_session_pinned (session_id, pinned DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 4. Chats overview – labels JSON DEFAULT NULL (fixed)
-    `CREATE TABLE IF NOT EXISTS chats_overview (
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      chat_id VARCHAR(255) NOT NULL,
-      last_message_preview LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-      last_message_id VARCHAR(255) DEFAULT NULL,
-      last_message_timestamp BIGINT DEFAULT 0,
-      unread_count INT DEFAULT 0,
-      is_pinned TINYINT(1) DEFAULT 0,
-      is_archived TINYINT(1) DEFAULT 0,
-      is_muted TINYINT(1) DEFAULT 0,
-      mute_end BIGINT DEFAULT NULL,
-      labels JSON DEFAULT NULL,
-      PRIMARY KEY (session_id, chat_id),
-      INDEX idx_session_timestamp (session_id, last_message_timestamp DESC),
-      INDEX idx_session_pinned (session_id, is_pinned DESC)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 4. Chats overview – labels JSON DEFAULT NULL (fixed)
+      `CREATE TABLE IF NOT EXISTS chats_overview (
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        chat_id VARCHAR(255) NOT NULL,
+        last_message_preview LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+        last_message_id VARCHAR(255) DEFAULT NULL,
+        last_message_timestamp BIGINT DEFAULT 0,
+        unread_count INT DEFAULT 0,
+        is_pinned TINYINT(1) DEFAULT 0,
+        is_archived TINYINT(1) DEFAULT 0,
+        is_muted TINYINT(1) DEFAULT 0,
+        mute_end BIGINT DEFAULT NULL,
+        labels JSON DEFAULT NULL,
+        PRIMARY KEY (session_id, chat_id),
+        INDEX idx_session_timestamp (session_id, last_message_timestamp DESC),
+        INDEX idx_session_pinned (session_id, is_pinned DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 5. Contacts
-    `CREATE TABLE IF NOT EXISTS contacts (
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      id VARCHAR(255) NOT NULL,
-      lid VARCHAR(255) DEFAULT NULL,
-      phone_number VARCHAR(50) DEFAULT NULL,
-      name VARCHAR(255) DEFAULT NULL,
-      notify VARCHAR(255) DEFAULT NULL,
-      verified_name VARCHAR(255) DEFAULT NULL,
-      profile_picture_url TEXT DEFAULT NULL,
-      about TEXT DEFAULT NULL,
-      business_profile JSON DEFAULT NULL,
-      last_seen_privacy VARCHAR(56) DEFAULT NULL,
-      profile_photo_privacy VARCHAR(56) DEFAULT NULL,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (session_id, id),
-      INDEX idx_session_phone (session_id, phone_number),
-      INDEX idx_session_name (session_id, name)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 5. Contacts
+      `CREATE TABLE IF NOT EXISTS contacts (
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        id VARCHAR(255) NOT NULL,
+        lid VARCHAR(255) DEFAULT NULL,
+        phone_number VARCHAR(50) DEFAULT NULL,
+        name VARCHAR(255) DEFAULT NULL,
+        notify VARCHAR(255) DEFAULT NULL,
+        verified_name VARCHAR(255) DEFAULT NULL,
+        profile_picture_url TEXT DEFAULT NULL,
+        about TEXT DEFAULT NULL,
+        business_profile JSON DEFAULT NULL,
+        last_seen_privacy VARCHAR(56) DEFAULT NULL,
+        profile_photo_privacy VARCHAR(56) DEFAULT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id, id),
+        INDEX idx_session_phone (session_id, phone_number),
+        INDEX idx_session_name (session_id, name)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 6. Contact changes
-    `CREATE TABLE IF NOT EXISTS contact_changes (
-      change_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      contact_id VARCHAR(255) NOT NULL,
-      changed_field VARCHAR(50) NOT NULL,
-      old_value TEXT,
-      new_value TEXT,
-      change_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_session_contact (session_id, contact_id),
-      INDEX idx_timestamp (change_timestamp DESC)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 6. Contact changes
+      `CREATE TABLE IF NOT EXISTS contact_changes (
+        change_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        contact_id VARCHAR(255) NOT NULL,
+        changed_field VARCHAR(50) NOT NULL,
+        old_value TEXT,
+        new_value TEXT,
+        change_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_session_contact (session_id, contact_id),
+        INDEX idx_timestamp (change_timestamp DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 7. Message reactions
-    `CREATE TABLE IF NOT EXISTS message_reactions (
-      reaction_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      chat_id VARCHAR(255) NOT NULL,
-      message_id VARCHAR(255) NOT NULL,
-      reactor_jid VARCHAR(255) NOT NULL,
-      emoji VARCHAR(20) NOT NULL,
-      timestamp BIGINT NOT NULL,
-      INDEX idx_session_message (session_id, chat_id, message_id),
-      INDEX idx_session_reactor (session_id, reactor_jid)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 7. Message reactions
+      `CREATE TABLE IF NOT EXISTS message_reactions (
+        reaction_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        chat_id VARCHAR(255) NOT NULL,
+        message_id VARCHAR(255) NOT NULL,
+        reactor_jid VARCHAR(255) NOT NULL,
+        emoji VARCHAR(20) NOT NULL,
+        timestamp BIGINT NOT NULL,
+        INDEX idx_session_message (session_id, chat_id, message_id),
+        INDEX idx_session_reactor (session_id, reactor_jid)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 8. Polls
-    `CREATE TABLE IF NOT EXISTS polls (
-      poll_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      chat_id VARCHAR(255) NOT NULL,
-      message_id VARCHAR(255) NOT NULL,
-      poll_name TEXT NOT NULL,
-      options JSON DEFAULT NULL,
-      selectable_count INT DEFAULT 1,
-      timestamp BIGINT NOT NULL,
-      INDEX idx_session_message (session_id, chat_id, message_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 8. Polls
+      `CREATE TABLE IF NOT EXISTS polls (
+        poll_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        chat_id VARCHAR(255) NOT NULL,
+        message_id VARCHAR(255) NOT NULL,
+        poll_name TEXT NOT NULL,
+        options JSON DEFAULT NULL,
+        selectable_count INT DEFAULT 1,
+        timestamp BIGINT NOT NULL,
+        INDEX idx_session_message (session_id, chat_id, message_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 9. Device blocklist
-    `CREATE TABLE IF NOT EXISTS device_blocklist (
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      jid VARCHAR(255) NOT NULL,
-      blocked_jids LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-      last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (session_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 9. Device blocklist
+      `CREATE TABLE IF NOT EXISTS device_blocklist (
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        jid VARCHAR(255) NOT NULL,
+        blocked_jids LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 10. Group metadata
-    `CREATE TABLE IF NOT EXISTS group_metadata (
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      id VARCHAR(255) NOT NULL,
-      subject VARCHAR(255) DEFAULT NULL,
-      subject_owner VARCHAR(255) DEFAULT NULL,
-      subject_time BIGINT DEFAULT NULL,
-      description TEXT DEFAULT NULL,
-      is_restricted TINYINT(1) DEFAULT 0,
-      is_announced TINYINT(1) DEFAULT 0,
-      participant_count INT DEFAULT NULL,
-      creation BIGINT DEFAULT NULL,
-      owner VARCHAR(255) DEFAULT NULL,
-      participants LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (session_id, id),
-      INDEX idx_session (session_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+      // 10. Group metadata
+      `CREATE TABLE IF NOT EXISTS group_metadata (
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        id VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) DEFAULT NULL,
+        subject_owner VARCHAR(255) DEFAULT NULL,
+        subject_time BIGINT DEFAULT NULL,
+        description TEXT DEFAULT NULL,
+        is_restricted TINYINT(1) DEFAULT 0,
+        is_announced TINYINT(1) DEFAULT 0,
+        participant_count INT DEFAULT NULL,
+        creation BIGINT DEFAULT NULL,
+        owner VARCHAR(255) DEFAULT NULL,
+        participants LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id, id),
+        INDEX idx_session (session_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-    // 11. Messages
-    `CREATE TABLE IF NOT EXISTS messages (
-      session_id VARCHAR(100) NOT NULL,
-      username VARCHAR(100) DEFAULT NULL,
-      chat_id VARCHAR(255) NOT NULL,
-      message_id VARCHAR(255) NOT NULL,
-      sender_jid VARCHAR(255) NOT NULL,
-      from_me TINYINT(1) DEFAULT 0,
-      type VARCHAR(56) DEFAULT 'other',
-      content TEXT DEFAULT NULL,
-      caption TEXT DEFAULT NULL,
-      timestamp BIGINT NOT NULL,
-      status VARCHAR(56) DEFAULT 'sent',
-      media_path VARCHAR(512) DEFAULT NULL,
-      quoted_message_id VARCHAR(255) DEFAULT NULL,
-      raw_json LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-      PRIMARY KEY (session_id, chat_id, message_id),
-      INDEX idx_session_chat_timestamp (session_id, chat_id, timestamp DESC),
-      INDEX idx_session_sender (session_id, sender_jid),
-      INDEX idx_session_quoted (session_id, quoted_message_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`
-  ];
+      // 11. Messages
+      `CREATE TABLE IF NOT EXISTS messages (
+        session_id VARCHAR(100) NOT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        chat_id VARCHAR(255) NOT NULL,
+        message_id VARCHAR(255) NOT NULL,
+        sender_jid VARCHAR(255) NOT NULL,
+        from_me TINYINT(1) DEFAULT 0,
+        type VARCHAR(56) DEFAULT 'other',
+        content TEXT DEFAULT NULL,
+        caption TEXT DEFAULT NULL,
+        timestamp BIGINT NOT NULL,
+        status VARCHAR(56) DEFAULT 'sent',
+        media_path VARCHAR(512) DEFAULT NULL,
+        quoted_message_id VARCHAR(255) DEFAULT NULL,
+        raw_json LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+        PRIMARY KEY (session_id, chat_id, message_id),
+        INDEX idx_session_chat_timestamp (session_id, chat_id, timestamp DESC),
+        INDEX idx_session_sender (session_id, sender_jid),
+        INDEX idx_session_quoted (session_id, quoted_message_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`
+    ];
 
-  return this.mysqlTransaction(async (conn) => {
-    try {
-      // === 1. Create / ensure all tables ===
-      for (const query of createTableQueries) {
-        await conn.query(query);
-      }
+    return this.mysqlTransaction(async (conn) => {
+      try {
+        // === 1. Create / ensure all tables ===
+        for (const query of createTableQueries) {
+          await conn.query(query);
+        }
 
-      // === 2. Triggers – DROP + CREATE separately (no DELIMITER needed) ===
-      await conn.query(`DROP TRIGGER IF EXISTS tr_messages_after_insert_unread`);
-      await conn.query(`
-        CREATE TRIGGER tr_messages_after_insert_unread
-        AFTER INSERT ON messages
-        FOR EACH ROW
-        BEGIN
-          IF NEW.from_me = 0 AND NEW.status != 'read' THEN
-            INSERT INTO chats_overview (
-              session_id, username, chat_id,
-              last_message_id, last_message_timestamp, unread_count,
-              is_pinned, is_archived, is_muted, mute_end, labels
-            )
-            VALUES (
-              NEW.session_id, NEW.username, NEW.chat_id,
-              NEW.message_id, NEW.timestamp, 1,
-              0, 0, 0, NULL, NULL
-            )
-            ON DUPLICATE KEY UPDATE
-              last_message_id         = NEW.message_id,
-              last_message_timestamp   = NEW.timestamp,
-              unread_count            = unread_count + 1;
-          END IF;
-        END
-      `);
+        // === 2. Triggers – DROP + CREATE separately (no DELIMITER needed) ===
+        await conn.query(`DROP TRIGGER IF EXISTS tr_messages_after_insert_unread`);
+        await conn.query(`
+          CREATE TRIGGER tr_messages_after_insert_unread
+          AFTER INSERT ON messages
+          FOR EACH ROW
+          BEGIN
+            IF NEW.from_me = 0 AND NEW.status != 'read' THEN
+              INSERT INTO chats_overview (
+                session_id, username, chat_id,
+                last_message_id, last_message_timestamp, unread_count,
+                is_pinned, is_archived, is_muted, mute_end, labels
+              )
+              VALUES (
+                NEW.session_id, NEW.username, NEW.chat_id,
+                NEW.message_id, NEW.timestamp, 1,
+                0, 0, 0, NULL, NULL
+              )
+              ON DUPLICATE KEY UPDATE
+                last_message_id         = NEW.message_id,
+                last_message_timestamp   = NEW.timestamp,
+                unread_count            = unread_count + 1;
+            END IF;
+          END
+        `);
 
-      await conn.query(`DROP TRIGGER IF EXISTS tr_messages_after_update_read`);
-      await conn.query(`
-        CREATE TRIGGER tr_messages_after_update_read
-        AFTER UPDATE ON messages
-        FOR EACH ROW
-        BEGIN
-          IF OLD.from_me = 0 
-             AND OLD.status != 'read' 
-             AND NEW.status = 'read' THEN
-            UPDATE chats_overview
-            SET unread_count = GREATEST(unread_count - 1, 0)
-            WHERE session_id = NEW.session_id
-              AND chat_id = NEW.chat_id;
-          END IF;
-        END
-      `);
+        await conn.query(`DROP TRIGGER IF EXISTS tr_messages_after_update_read`);
+        await conn.query(`
+          CREATE TRIGGER tr_messages_after_update_read
+          AFTER UPDATE ON messages
+          FOR EACH ROW
+          BEGIN
+            IF OLD.from_me = 0 
+              AND OLD.status != 'read' 
+              AND NEW.status = 'read' THEN
+              UPDATE chats_overview
+              SET unread_count = GREATEST(unread_count - 1, 0)
+              WHERE session_id = NEW.session_id
+                AND chat_id = NEW.chat_id;
+            END IF;
+          END
+        `);
 
-      // === 3. Indexes – safe check + create ===
-      const indexes = [
-        {
-          table: 'messages',
-          name: 'idx_session_type_timestamp',
-          columns: 'session_id, type, timestamp DESC'
-        },
-        {
-          table: 'chats_overview',
-          name: 'idx_session_unread',
-          columns: 'session_id, unread_count DESC'
-        },
-        {
-          table: 'group_metadata',
-          name: 'idx_session_subject',
-          columns: 'session_id, subject'
-        },
-        // ← add more indexes here if needed
-      ];
+        // === 3. Indexes – safe check + create ===
+        const indexes = [
+          {
+            table: 'messages',
+            name: 'idx_session_type_timestamp',
+            columns: 'session_id, type, timestamp DESC'
+          },
+          {
+            table: 'chats_overview',
+            name: 'idx_session_unread',
+            columns: 'session_id, unread_count DESC'
+          },
+          {
+            table: 'group_metadata',
+            name: 'idx_session_subject',
+            columns: 'session_id, subject'
+          },
+          // ← add more indexes here if needed
+        ];
 
-      for (const idx of indexes) {
-        const [rows] = await conn.query(
-          `SHOW INDEX FROM ?? WHERE Key_name = ?`,
-          [idx.table, idx.name]
-        );
-
-        if (rows.length === 0) {
-          await conn.query(
-            `ALTER TABLE ?? ADD INDEX ?? (${idx.columns})`,
+        for (const idx of indexes) {
+          const [rows] = await conn.query(
+            `SHOW INDEX FROM ?? WHERE Key_name = ?`,
             [idx.table, idx.name]
           );
-          console.log(`[${this.sessionId}] Created index ${idx.name} on ${idx.table}`);
-        }
-      }
 
-      console.log(`[${this.sessionId}] All global tables, triggers, and indexes ensured successfully`);
-    } catch (err) {
-      console.error(`[${this.sessionId}] Critical error during ensureTables:`, err.message, err);
-      throw err; 
-    }
-  });
-}
+          if (rows.length === 0) {
+            await conn.query(
+              `ALTER TABLE ?? ADD INDEX ?? (${idx.columns})`,
+              [idx.table, idx.name]
+            );
+            console.log(`[${this.sessionId}] Created index ${idx.name} on ${idx.table}`);
+          }
+        }
+
+        console.log(`[${this.sessionId}] All global tables, triggers, and indexes ensured successfully`);
+      } catch (err) {
+        console.error(`[${this.sessionId}] Critical error during ensureTables:`, err.message, err);
+        throw err; 
+      }
+    });
+  }
 
   async mysqlQuery(sql, params = [], maxRetries = 1) {
     let lastError;
@@ -436,6 +437,38 @@ async ensureTables() {
     } catch (err) {
       console.warn(`[${this.sessionId}] Redis DEL failed for keys ${keys.join(", ")}: ${err.message}`);
     }
+  }
+
+  async authenticateUser(username, password) {
+    console.log('[DB AUTH] === START ===');
+    console.log('[DB AUTH] Username:', username);
+    console.log('[DB AUTH] Password received (raw):', JSON.stringify(password));
+    console.log('[DB AUTH] Password char codes:', password.split('').map(c => c.charCodeAt(0)));
+    console.log('[DB AUTH] Password length:', password.length);
+
+    const rows = await this.mysqlQuery(
+      "SELECT username, password_hash, api_key, role FROM users WHERE username = ?",
+      [username]
+    );
+
+    console.log('[DB AUTH] Rows found:', rows.length);
+    if (rows.length === 0) return null;
+
+    const storedHash = rows[0].password_hash;
+    console.log('[DB AUTH] Stored hash:', storedHash);
+
+    const match = await bcrypt.compare(password, storedHash);
+
+    console.log('[DB AUTH] bcrypt.compare result:', match);
+    console.log('[DB AUTH] === END ===');
+
+    if (!match) return null;
+
+    return {
+      username: rows[0].username,
+      apiKey: rows[0].api_key,
+      role: rows[0].role,
+    };
   }
 
   async downloadAndSaveMedia(msg) {

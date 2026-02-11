@@ -12,8 +12,8 @@ const fs = require('fs');
 const qrcode = require('qrcode');
 
 const Utilities = require('./Utilities'); // ← NEW: import Utilities
-const wsManager = require('../websocket/WebSocketManager');
-const DatabaseStore = require('../../stores/DatabaseStore');
+const wsManager = require('./WebSocketManager');
+const DatabaseStore = require('./DatabaseStore');
 
 const WebhookManager = require('./WebhookManager');
 const GroupManager   = require('./GroupManager');

@@ -119,9 +119,7 @@ class WhatsAppManager {
                 const info = session.getInfo();
                 return username && info.username !== username ? null : info;
             })
-            .filter(Boolean); // remove nulls from username filter
-
-        console.log('Final sessionsInfo length:', sessionsInfo.length);
+            .filter(Boolean);
         return sessionsInfo;
     }
 

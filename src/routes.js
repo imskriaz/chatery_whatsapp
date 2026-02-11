@@ -2,8 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const whatsappManager = require('../services/whatsapp');
-const Utilities = require('../services/whatsapp/Utilities');
+const whatsappManager = require('.');
+const Utilities = require('./Utilities');
 
 const bulkJobs = new Map();
 

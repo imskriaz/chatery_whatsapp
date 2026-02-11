@@ -11,13 +11,13 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Import Routes
-const whatsappRoutes = require('./src/routes/whatsapp');
+const whatsappRoutes = require('./src/routes');
 
 // Import Middleware
-const userAuth = require('./src/middleware/UserAuth');
+const userAuth = require('./src/UserAuth');
 
 // Import WebSocket Manager
-const wsManager = require('./src/services/websocket/WebSocketManager');
+const wsManager = require('./src/WebSocketManager');
 
 // Initialize WebSocket
 wsManager.initialize(server, {
@@ -35,21 +35,28 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve Dashboard
-app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
+// ────────────────────────────────────────────────
+// Renamed paths (only UI & Admin)
+// ────────────────────────────────────────────────
 
+// Main UI (WhatsApp interface) → /ui
 app.get('/ui', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'ui.html'));
 });
 
-// Serve WebSocket test page
+// Admin Dashboard → /admin
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));  // ← rename your dashboard.html to admin.html if needed
+});
+
+// WebSocket test page (keep as-is)
 app.get('/ws-test', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'websocket-test.html'));
 });
 
-// Swagger UI Options
+// ────────────────────────────────────────────────
+// Swagger Documentation (moved to /docs)
+// ────────────────────────────────────────────────
 const swaggerUiOptions = {
     customCss: `
         .swagger-ui .topbar { display: none }
@@ -60,9 +67,8 @@ const swaggerUiOptions = {
     customfavIcon: '/media/favicon.ico'
 };
 
-// API Documentation (Swagger UI) at root
-app.use('/', swaggerUi.serve);
-app.get('/', swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+app.use('/docs', swaggerUi.serve);
+app.get('/docs', swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 // Swagger JSON endpoint
 app.get('/api-docs.json', (req, res) => {
@@ -70,6 +76,9 @@ app.get('/api-docs.json', (req, res) => {
     res.send(swaggerSpec);
 });
 
+// ────────────────────────────────────────────────
+// Health check & other root-level endpoints (unchanged)
+// ────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,
@@ -78,7 +87,9 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Dashboard Login
+// ────────────────────────────────────────────────
+// Admin / Dashboard Login (unchanged endpoint)
+// ────────────────────────────────────────────────
 app.post('/api/dashboard/login', (req, res) => {
     const { username, password } = req.body;
     
@@ -101,7 +112,7 @@ app.post('/api/dashboard/login', (req, res) => {
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
-  const result = await userAuth.authenticate({ username, password });  // ← add await
+  const result = await userAuth.authenticate({ username, password });
 
   if (!result.success) {
     return res.status(401).json(result);
@@ -115,71 +126,66 @@ app.post('/api/login', async (req, res) => {
   });
 });
 
-app.post('/api/admin/users', userAuth.validate, (req, res) => {
-    const result = userAuth.createUser(req.body);
-    res.status(result.success ? 201 : 400).json(result);
+app.post('/api/admin/users', userAuth.validate, userAuth.isAdmin, async (req, res) => {
+  const result = await userAuth.createUser(req.body);
+  res.status(result.success ? 201 : 400).json(result);
 });
 
-app.patch('/api/admin/users/:username', userAuth.validate, (req, res) => {
-    const result = userAuth.updateUser(req.params.username, req.body);
-    res.json(result);
+app.patch('/api/admin/users/:username', userAuth.validate, userAuth.isAdmin, async (req, res) => {
+  const result = await userAuth.updateUser(req.params.username, req.body);
+  res.json(result);
 });
 
-app.get('/api/admin/users', userAuth.validate, (req, res) => {
-    const usersList = userAuth.getUsers();
+app.get('/api/admin/users', userAuth.validate, userAuth.isAdmin, async (req, res) => {
+  try {
+    const usersList = await userAuth.listUsers();
     res.json({
-        success: true,
-        data: usersList
+      success: true,
+      data: usersList
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to list users' });
+  }
 });
 
-app.get('/api/admin/users/:username', userAuth.validate, (req, res) => {
-    const user = userAuth.getUser({ username: req.params.username });
-    if (!user) {
-        return res.status(404).json({
-            success: false,
-            message: 'User not found'
-        });
-    }
-    res.json({
-        success: true,
-        data: user
-    });
+app.get('/api/admin/users/:username', userAuth.validate, userAuth.isAdmin, async (req, res) => {
+  const result = await userAuth.getUser({ username: req.params.username });
+  if (!result.success) {
+    return res.status(404).json(result);
+  }
+  res.json(result);
 });
 
 app.get('/api/admin/users/me', userAuth.validate, (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({
-            success: false,
-            message: 'Not authenticated'
-        });
+  res.json({
+    success: true,
+    data: {
+      username: req.user.username,
+      role: req.user.role,
+      apiKey: req.user.apiKey
     }
-
-    res.json({
-        success: true,
-        data: {
-            username: req.user.username,
-            role: req.user.role,
-            apiKey: req.user.apiKey
-        }
-    });
+  });
 });
 
-// WhatsApp Routes (with API Key Authentication)
 app.use('/api/whatsapp', userAuth.validate, whatsappRoutes);
 
-// 404 Handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Route not found'
-    });
-});
-
+// ────────────────────────────────────────────────
+// WebSocket Stats (unchanged)
+// ────────────────────────────────────────────────
 app.get('/api/websocket/stats', (req, res) => {
     res.json({
         success: true,
         data: wsManager.getStats()
+    });
+});
+
+// ────────────────────────────────────────────────
+// 404 Handler
+// ────────────────────────────────────────────────
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Route not found'
     });
 });
 
@@ -192,8 +198,12 @@ app.use((err, req, res, next) => {
     });
 });
 
+// ────────────────────────────────────────────────
 // Start Server
+// ────────────────────────────────────────────────
 server.listen(PORT, () => {
-    console.log(`Chatery WhatsApp API running on http://localhost:${PORT}`);
-    console.log(`API Documentation: http://localhost:${PORT}`);
+    console.log(`WhatsApp API running on http://localhost:${PORT}`);
+    console.log(`Main UI (WhatsApp):      http://localhost:${PORT}/ui`);
+    console.log(`Admin Dashboard:         http://localhost:${PORT}/admin`);
+    console.log(`API Documentation:       http://localhost:${PORT}/docs`);
 });
