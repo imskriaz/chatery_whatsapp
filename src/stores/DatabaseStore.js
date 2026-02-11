@@ -223,6 +223,7 @@ async ensureTables() {
     `CREATE TABLE IF NOT EXISTS device_blocklist (
       session_id VARCHAR(100) NOT NULL,
       username VARCHAR(100) DEFAULT NULL,
+      jid VARCHAR(255) NOT NULL,
       blocked_jids LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
       last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (session_id)
@@ -353,15 +354,13 @@ async ensureTables() {
             [idx.table, idx.name]
           );
           console.log(`[${this.sessionId}] Created index ${idx.name} on ${idx.table}`);
-        } else {
-          console.log(`[${this.sessionId}] Index ${idx.name} on ${idx.table} already exists`);
         }
       }
 
       console.log(`[${this.sessionId}] All global tables, triggers, and indexes ensured successfully`);
     } catch (err) {
       console.error(`[${this.sessionId}] Critical error during ensureTables:`, err.message, err);
-      throw err; // rollback
+      throw err; 
     }
   });
 }
@@ -1369,7 +1368,7 @@ async ensureTables() {
     return Object.fromEntries(counts);
   }
 
-  async delete(sessionId) {
+  async deleteSession(sessionId) {
     const session_id = (sessionId || '').trim();
     
     if (!session_id) {
